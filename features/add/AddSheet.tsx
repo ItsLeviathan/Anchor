@@ -41,11 +41,17 @@ export function AddSheet() {
   const router = useRouter();
   const { colors, spacing, typography, radius } = useTheme();
 
-  function handleSelect(_key: AddOptionKey) {
-    // Real per-type creation flows arrive in Phase 2 (Task/Event/Reminder)
-    // and Phase 5 (Expense/Bill/Document/Habit/Shopping) and Phase 4
-    // (Brain Dump). For now this just proves the shell: tapping an option
-    // closes the sheet rather than pretending to create something.
+  function handleSelect(key: AddOptionKey) {
+    if (key === 'task') {
+      // Replace rather than push so we don't stack two modals on top of
+      // each other - this reads as one continuous sheet to the user.
+      router.replace('/task-new');
+      return;
+    }
+
+    // Every other type arrives in a later phase (Event/Reminder in the
+    // Calendar slice, Expense/Bill/Document/Habit/Shopping in Phase 5,
+    // Brain Dump in Phase 4). For now, just close.
     router.back();
   }
 

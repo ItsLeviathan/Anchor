@@ -20,6 +20,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="add-sheet" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="task-new" options={{ presentation: 'modal' }} />
           </Stack>
         </AppProviders>
       </SafeAreaProvider>

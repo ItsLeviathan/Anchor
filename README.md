@@ -1,30 +1,44 @@
-# Anchor — Phase 1: Foundation
+# Anchor — Phase 1 + Phase 2 (in progress)
 
-This is the foundation layer of Anchor: navigation shell, design system,
-anonymous auth, local-first persistence, and the entitlements/monetization
-plumbing. No task/calendar/expense features exist yet — that's Phase 2 and
-onward. See the two spec docs this was built from for the full roadmap.
+Phase 1 (foundation) is complete. Phase 2 (Core Anchor) is underway:
+**Tasks, Categories, and recurring tasks are done**; Calendar/Events and
+Reminders (local notifications) are the next slice.
 
 ## What's here
 
+**Phase 1 — Foundation**
 - Expo Router with the 5-tab shell (Today, Calendar, Life, Insights,
-  Profile) and a global **+** action that opens a modal listing every
-  creation type from the spec (selecting one just closes the sheet for now
-  — real creation flows land in later phases)
+  Profile) and a global **+** action
 - A small design system (`lib/theme`) with light/dark tokens and base
   components (`components/ui`)
 - Anonymous Supabase auth (`lib/supabase/useSession.ts`) — the app never
   forces sign-up
 - Secure, chunked SecureStore-backed session storage
-  (`lib/supabase/secureStorage.ts`)
-- A minimal local-first SQLite layer (`lib/database/db.ts`) proving
-  write-then-read works instantly, offline
+- A minimal local-first SQLite layer (`lib/database/db.ts`)
 - A centralized entitlements layer (`lib/entitlements/`) per the
-  monetization spec: pure `deriveEntitlements()` logic + a `useEntitlements`
-  hook, backed by `subscriptions` and `app_config` tables with RLS that
-  makes the client physically unable to grant itself Pro access
-- Zustand for local UI state, TanStack Query for server state — kept
-  separate on purpose
+  monetization spec, backed by `subscriptions` and `app_config` tables
+- Zustand for local UI state, TanStack Query for server state
+
+**Phase 2 — Tasks & Categories (this update)**
+- `categories` table, auto-seeded with the 10 default categories the
+  moment a profile is created (spec section 29)
+- `tasks` table: title, description, due date/time, priority, status,
+  category, and an optional recurrence rule
+- Full task CRUD (`features/tasks/`) with optimistic completion/deletion
+  so the UI updates instantly, never waiting on the network round trip
+- Deterministic task prioritization (`lib/tasks/prioritization.ts`, no
+  AI) driving what shows up on **Today** — pure functions, easy to unit
+  test
+- Recurring tasks: completing a recurring task generates only its next
+  occurrence (`lib/tasks/recurrence.ts`), never a batch of future rows
+  (spec section 18)
+- Quick task creation with progressive disclosure — title only by
+  default, due date/repeat/priority/category behind "More options"
+  (spec section 44)
+- Swipeable task rows (swipe to complete / delete), plus a tap-to-complete
+  checkbox
+- **Today** now shows real prioritized tasks and a "Your Life" category
+  breakdown instead of the Phase 1 empty state
 
 ## Setup
 
@@ -56,16 +70,13 @@ cp .env.example .env
 Paste your Project URL and anon key into `.env`. This file is already
 git-ignored.
 
-### 4. Run the database migration
+### 4. Run the database migrations, in order
 
-Open **SQL Editor** in your Supabase project, paste the contents of
-`supabase/migrations/0001_init.sql`, and run it. This creates:
+Open **SQL Editor** in your Supabase project and run each file in
+`supabase/migrations/` **in order**:
 
-- `profiles` (auto-populated on sign-up via a trigger)
-- `subscriptions` and `ai_usage` (read-only to clients — writes only ever
-  happen from a service-role Edge Function in a later phase)
-- `app_config` (remote-config style table; seeded with
-  `free_ai_monthly_limit = 10`)
+1. `0001_init.sql` — profiles, subscriptions, ai_usage, app_config
+2. `0002_tasks.sql` — categories (+ default-seeding trigger) and tasks
 
 ### 5. Start the app
 
@@ -76,23 +87,36 @@ npx expo start
 Scan the QR code with Expo Go (iOS/Android), or press `i` / `a` for a
 simulator/emulator if you have one set up.
 
-## Verifying Phase 1 works
+## Verifying it works
 
-- The app opens straight to **Today** with no sign-up screen (anonymous
-  session created automatically)
-- Tapping the center **+** button opens the Add sheet as a modal
-- **Profile** shows "Signed in anonymously," confirms local caching, and
-  shows "Anchor Free · 10 AI actions per month" (pulled from the
-  `app_config` table, not hardcoded)
+- The app opens straight to **Today** with no sign-up screen
+- **Today** shows "Nothing demanding your attention yet" the first time
+  (no tasks exist yet)
+- Tap **+** → **Task**, type a title, tap **Save task** — it appears on
+  Today within its priority slot
+- Expand **More options** when creating a task to set a due date,
+  priority, category, and (once a due date is set) a repeat frequency
+- Swipe a task right to complete it, left to delete it, or tap its
+  checkbox — completion feels instant even before the network responds
+- Complete a task with **Repeat** set to anything other than "Never" —
+  a new task with the next due date appears; there's still only ever one
+  pending instance of it at a time
 - Turn off Wi-Fi/data: the app still opens and Profile still renders from
-  local cache
-- Toggle your device's dark mode: colors switch without a restart
+  local cache (task changes will need Phase 3's sync engine to work fully
+  offline — see below)
+- **Profile** still shows "Anchor Free · 10 AI actions per month" pulled
+  from `app_config`, not hardcoded
 
 ## What's intentionally not built yet
 
-- No real tasks, events, bills, or any other content type — Phase 2+
-- No sync engine (local writes aren't pushed to Supabase yet) — Phase 3
+- **Calendar/Events and Reminders** — the next slice of Phase 2
+- No sync engine — task changes go straight to Supabase; true offline
+  task creation/editing (queued locally, synced later) is Phase 3
 - No AI features — Phase 4
 - No paywall UI or actual billing integration (RevenueCat/StoreKit/Play
   Billing) — the entitlements *read* layer exists so features can check
   `entitlements.canUseX` from day one, but nothing sells anything yet
+- Task attachments, subtasks, and drag-to-reorder are deferred; the
+  `tasks` table and types are structured so they can be added without a
+  schema rewrite
+
