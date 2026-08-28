@@ -46,3 +46,28 @@ export interface Task {
   updatedAt: string;
 }
 
+export interface Calendar {
+  id: string;
+  userId: string;
+  name: string;
+  color: string;
+  isDefault: boolean;
+}
+
+export interface CalendarEvent {
+  id: string;
+  userId: string;
+  calendarId: string;
+  title: string;
+  location: string | null;
+  description: string | null;
+  /** ISO datetime */
+  startAt: string;
+  /** ISO datetime */
+  endAt: string;
+  allDay: boolean;
+  recurrenceRule: RecurrenceRule | null;
+  createdAt: string;
+  updatedAt: string;
+}
+

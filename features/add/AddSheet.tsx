@@ -49,8 +49,13 @@ export function AddSheet() {
       return;
     }
 
-    // Every other type arrives in a later phase (Event/Reminder in the
-    // Calendar slice, Expense/Bill/Document/Habit/Shopping in Phase 5,
+    if (key === 'event') {
+      router.replace('/event-new');
+      return;
+    }
+
+    // Every other type arrives in a later phase (Reminder alongside
+    // notifications, Expense/Bill/Document/Habit/Shopping in Phase 5,
     // Brain Dump in Phase 4). For now, just close.
     router.back();
   }

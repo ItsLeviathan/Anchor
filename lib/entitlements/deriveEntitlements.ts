@@ -42,6 +42,7 @@ export function deriveEntitlements(
     canUseAdvancedWidgets: isPro,
     canStoreAdvancedDocuments: isPro,
     canUseAdvancedStudentMode: isPro,
+    canUseMultipleCalendars: isPro,
     aiMonthlyLimit: isPro ? PRO_AI_MONTHLY_LIMIT_PLACEHOLDER : freeAiMonthlyLimit,
   };
 }

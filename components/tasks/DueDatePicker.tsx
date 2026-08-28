@@ -12,15 +12,18 @@ interface PickerEvent {
 interface DueDatePickerProps {
   dueDate: Date | null;
   onChange: (date: Date | null) => void;
+  mode?: 'date' | 'datetime';
+  label?: string;
 }
 
 /**
  * Android's community picker is recommended to be driven imperatively (it
  * opens as a system dialog, not an inline component); iOS renders it inline.
  * This wrapper hides that split behind one prop-compatible component so
- * screens don't need platform branches of their own.
+ * screens don't need platform branches of their own. `mode="date"` skips
+ * the time step entirely (used for all-day events).
  */
-export function DueDatePicker({ dueDate, onChange }: DueDatePickerProps) {
+export function DueDatePicker({ dueDate, onChange, mode = 'datetime', label = 'Add due date' }: DueDatePickerProps) {
   const { colors, spacing, radius, typography } = useTheme();
   const [iosStep, setIosStep] = useState<'date' | 'time' | null>(null);
 
@@ -30,6 +33,11 @@ export function DueDatePicker({ dueDate, onChange }: DueDatePickerProps) {
       mode: 'date',
       onChange: (event: PickerEvent, selectedDate?: Date) => {
         if (event.type !== 'set' || !selectedDate) return;
+
+        if (mode === 'date') {
+          onChange(selectedDate);
+          return;
+        }
 
         DateTimePickerAndroid.open({
           value: dueDate ?? selectedDate,
@@ -62,17 +70,14 @@ export function DueDatePicker({ dueDate, onChange }: DueDatePickerProps) {
       return;
     }
     onChange(selected);
-    setIosStep(iosStep === 'date' ? 'time' : null);
+    setIosStep(mode === 'datetime' && iosStep === 'date' ? 'time' : null);
   }
 
-  const label = dueDate
-    ? dueDate.toLocaleString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      })
-    : 'Add due date';
+  const displayLabel = dueDate
+    ? mode === 'date'
+      ? dueDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+      : dueDate.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : label;
 
   return (
     <View>
@@ -85,7 +90,7 @@ export function DueDatePicker({ dueDate, onChange }: DueDatePickerProps) {
           ]}
         >
           <Ionicons name="calendar-outline" size={16} color={colors.textSecondary} />
-          <Text style={[typography.body, { color: colors.textPrimary, marginLeft: spacing.xs }]}>{label}</Text>
+          <Text style={[typography.body, { color: colors.textPrimary, marginLeft: spacing.xs }]}>{displayLabel}</Text>
         </Pressable>
 
         {dueDate ? (

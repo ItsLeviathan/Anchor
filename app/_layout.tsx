@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initDatabase } from '../lib/database/db';
+import '../lib/notifications/setup';
 import { AppProviders } from '../providers/AppProviders';
 
 export default function RootLayout() {
@@ -21,6 +22,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="add-sheet" options={{ presentation: 'modal' }} />
             <Stack.Screen name="task-new" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="event-new" options={{ presentation: 'modal' }} />
           </Stack>
         </AppProviders>
       </SafeAreaProvider>

@@ -21,5 +21,6 @@ export interface Entitlements {
   canUseAdvancedWidgets: boolean;
   canStoreAdvancedDocuments: boolean;
   canUseAdvancedStudentMode: boolean;
+  canUseMultipleCalendars: boolean;
   aiMonthlyLimit: number;
 }

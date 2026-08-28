@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type { Task } from '../../types';
 import { computeNextDueDate } from '../../lib/tasks/recurrence';
+import { cancelTaskReminder, scheduleTaskReminder } from '../../lib/notifications/scheduler';
 import { createTask, deleteTask, fetchTasks, setTaskStatus, updateTask } from './api';
 
 const TASKS_KEY = ['tasks'] as const;
@@ -19,8 +20,9 @@ export function useCreateTask(userId: string | undefined) {
 
   return useMutation({
     mutationFn: createTask,
-    onSuccess: () => {
+    onSuccess: (createdTask) => {
       queryClient.invalidateQueries({ queryKey: [...TASKS_KEY, userId] });
+      scheduleTaskReminder(createdTask).catch((err) => console.error('Failed to schedule task reminder', err));
     },
   });
 }
@@ -30,8 +32,9 @@ export function useUpdateTask(userId: string | undefined) {
 
   return useMutation({
     mutationFn: updateTask,
-    onSuccess: () => {
+    onSuccess: (updatedTask) => {
       queryClient.invalidateQueries({ queryKey: [...TASKS_KEY, userId] });
+      scheduleTaskReminder(updatedTask).catch((err) => console.error('Failed to reschedule task reminder', err));
     },
   });
 }
@@ -53,9 +56,10 @@ export function useCompleteTask(userId: string | undefined) {
   return useMutation({
     mutationFn: async (task: Task) => {
       const completed = await setTaskStatus(task.id, 'completed');
+      await cancelTaskReminder(task.id);
 
       if (task.recurrenceRule && task.dueDate) {
-        await createTask({
+        const nextTask = await createTask({
           userId: task.userId,
           title: task.title,
           categoryId: task.categoryId,
@@ -64,6 +68,7 @@ export function useCompleteTask(userId: string | undefined) {
           priority: task.priority,
           recurrenceRule: task.recurrenceRule,
         });
+        await scheduleTaskReminder(nextTask);
       }
 
       return completed;
@@ -96,7 +101,11 @@ export function useReopenTask(userId: string | undefined) {
   const queryKey = [...TASKS_KEY, userId];
 
   return useMutation({
-    mutationFn: (id: string) => setTaskStatus(id, 'pending'),
+    mutationFn: async (id: string) => {
+      const reopened = await setTaskStatus(id, 'pending');
+      await scheduleTaskReminder(reopened);
+      return reopened;
+    },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<Task[]>(queryKey);
@@ -123,7 +132,10 @@ export function useDeleteTask(userId: string | undefined) {
   const queryKey = [...TASKS_KEY, userId];
 
   return useMutation({
-    mutationFn: (id: string) => deleteTask(id),
+    mutationFn: async (id: string) => {
+      await cancelTaskReminder(id);
+      await deleteTask(id);
+    },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey });
       const previous = queryClient.getQueryData<Task[]>(queryKey);

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card } from '../../../components/ui';
 import { cacheProfile, getCachedProfile, type CachedProfile } from '../../../lib/database/db';
 import { useEntitlements } from '../../../lib/entitlements/useEntitlements';
+import { areRemindersEnabled, setRemindersEnabled } from '../../../lib/notifications/preferences';
 import { useSession } from '../../../lib/supabase/useSession';
 import { useTheme } from '../../../lib/theme/ThemeProvider';
 
@@ -14,6 +15,23 @@ export default function ProfileScreen() {
   const { session, isLoading: isSessionLoading } = useSession();
   const { entitlements, isLoading: isEntitlementsLoading } = useEntitlements(session?.user.id);
   const [cached, setCached] = useState<CachedProfile | null>(null);
+  const [remindersOn, setRemindersOn] = useState(true);
+
+  useEffect(() => {
+    areRemindersEnabled()
+      .then(setRemindersOn)
+      .catch((err) => console.error('Failed to load reminder preference', err));
+  }, []);
+
+  async function handleToggleReminders(value: boolean) {
+    setRemindersOn(value); // optimistic - this is a local, instant preference
+    try {
+      await setRemindersEnabled(value);
+    } catch (err) {
+      console.error('Failed to save reminder preference', err);
+      setRemindersOn(!value);
+    }
+  }
 
   useEffect(() => {
     if (!session) return;
@@ -75,6 +93,22 @@ export default function ProfileScreen() {
             <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs }]}>
               {entitlements.aiMonthlyLimit} AI actions per month
             </Text>
+          </Card>
+
+          <Card style={{ marginTop: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, marginRight: spacing.md }}>
+                <Text style={[typography.headline, { color: colors.textPrimary }]}>Task & event reminders</Text>
+                <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
+                  Notify me when something is due or about to start
+                </Text>
+              </View>
+              <Switch
+                value={remindersOn}
+                onValueChange={handleToggleReminders}
+                trackColor={{ true: colors.accent, false: colors.border }}
+              />
+            </View>
           </Card>
         </>
       )}
