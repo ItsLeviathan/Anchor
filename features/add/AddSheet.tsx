@@ -54,9 +54,14 @@ export function AddSheet() {
       return;
     }
 
+    if (key === 'brain-dump') {
+      router.replace('/brain-dump');
+      return;
+    }
+
     // Every other type arrives in a later phase (Reminder alongside
-    // notifications, Expense/Bill/Document/Habit/Shopping in Phase 5,
-    // Brain Dump in Phase 4). For now, just close.
+    // notifications, Expense/Bill/Document/Habit/Shopping in Phase 5).
+    // For now, just close.
     router.back();
   }
 

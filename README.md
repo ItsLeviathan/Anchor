@@ -1,70 +1,70 @@
-# Anchor — Phase 1 + Phase 2 + Phase 3
+# Anchor — Phase 1 + Phase 2 + Phase 3 + Phase 4
 
-Phases 1 and 2 are complete. **Phase 3 (Offline) is now done too**: tasks
-and events are genuinely local-first, with a background sync engine,
-conflict handling, and a subtle sync status indicator.
+Phases 1–3 are complete. **Phase 4 (Intelligence) is now scaffolded**:
+Brain Dump, AI daily planning, and a deterministic (non-AI) Quick Add
+parser. Read the "Please read before trusting this" section below before
+deploying the AI parts — this phase touches infrastructure (a real
+Supabase Edge Function calling a real AI provider) that could not be
+exercised end-to-end in the environment this was built in.
 
 ## What's here
 
-**Phase 1 — Foundation**
-- Expo Router with the 5-tab shell (Today, Calendar, Life, Insights,
-  Profile) and a global **+** action
-- A small design system (`lib/theme`) with light/dark tokens and base
-  components (`components/ui`)
-- Anonymous Supabase auth (`lib/supabase/useSession.ts`) — the app never
-  forces sign-up
-- Secure, chunked SecureStore-backed session storage
-- A centralized entitlements layer (`lib/entitlements/`) per the
-  monetization spec, backed by `subscriptions` and `app_config` tables
-- Zustand for local UI state, TanStack Query for server state
+**Phase 1 — Foundation.** Navigation shell, design system, anonymous
+auth, entitlements layer, local persistence.
 
-**Phase 2 — Tasks, Categories, Calendar, Events, Reminders**
-- Full task CRUD, deterministic prioritization (no AI) driving **Today**,
-  recurring tasks, categories, month calendar + day agenda, events,
-  lightweight scheduling-conflict warnings, and local notification
-  reminders for both tasks and events
-- `entitlements.canUseMultipleCalendars` added, matching the "Multiple
-  calendars" Anchor Pro perk
+**Phase 2 — Tasks, Categories, Calendar, Events, Reminders.** Full task
+CRUD, deterministic prioritization, recurring tasks, month calendar + day
+agenda, events, scheduling-conflict warnings, local notification
+reminders.
 
-**Phase 3 — Offline (this update)**
-- **Local-first tasks and events.** Reads and writes go straight to
-  SQLite (`local_tasks`, `local_events`) - there is no network call in
-  the read path at all, and creating/editing/completing/deleting
-  something never waits on connectivity
-- **Client-generated permanent IDs** (`lib/sync/ids.ts`, via
-  `expo-crypto`): every task/event gets its id on the device at creation
-  time, and that's the same id it has on the server once synced. This is
-  the architectural choice that avoids the classic "local id vs. server
-  id" remapping problem entirely
-- **A sync queue** (`lib/sync/queue.ts`) that coalesces repeated edits to
-  the same entity into one pending operation - editing an offline task
-  three times before it ever syncs produces one queued 'upsert' with the
-  latest data, not three
-- **A sync engine** (`lib/sync/engine.ts`):
-  - `flushQueue()` pushes every queued change to Supabase, one at a time;
-    one failing entry doesn't block the rest
-  - `pullRemoteChanges()` merges server state into the local tables on
-    app start and on reconnect, skipping any row with a pending local
-    edit so a pull can't clobber work in progress, and pruning local rows
-    that no longer exist remotely (e.g. deleted via the Supabase
-    dashboard)
-  - **Documented conflict rule**: last-write-wins via unconditional
-    upsert. Anchor is single-user, so real conflicts only happen if the
-    same account edits the same row from two devices while one was
-    offline - whichever device's change reaches the server last wins.
-    This is a deliberate simplification; true field-level merging isn't
-    worth the complexity unless concurrent multi-device editing becomes
-    common enough to cause real data loss
-- **Sync triggers** (`lib/sync/useSyncLifecycle.ts`): app start (pull
-  then flush), connectivity actually being restored via NetInfo (flush
-  then pull), and returning to the foreground while already online (a
-  lightweight flush safety net)
-- **Subtle sync status** (spec section 49): a small dot + label -
-  Synced / Saving… / Offline / Waiting to sync - shown on Today, backed
-  by a Zustand store (`store/useSyncStore.ts`) so any screen could show
-  it without re-deriving the logic
-- Categories and calendars (read-only so far) are also cached locally so
-  their pickers keep working offline
+**Phase 3 — Offline.** Tasks and events are local-first with a
+background sync engine, a documented last-write-wins conflict rule, and
+a subtle sync status indicator.
+
+**Phase 4 — Intelligence (this update)**
+
+- **Supabase Edge Function** (`supabase/functions/ai-assist/`) — the only
+  place that ever talks to an AI provider. Handles two actions:
+  - `brain_dump`: turns free text into a structured, categorized list of
+    tasks (spec sections 19, 21, 22)
+  - `daily_plan`: a short natural-language focus recommendation, built
+    from *deterministically* fetched tasks/events (never from
+    client-supplied data) — this is the "smart" layer on top of, not a
+    replacement for, Phase 2's deterministic prioritization
+  - Uses Claude (Anthropic's Messages API) with a forced tool call for
+    structured JSON output — no fragile prose parsing
+  - **Quota is enforced server-side**, re-deriving the same entitlement
+    logic the client uses (mirrors `lib/entitlements/`) rather than
+    trusting the client's copy, per the monetization spec
+  - Uses Supabase's current recommended pattern for Edge Functions:
+    `withSupabase` from `@supabase/server`, which handles auth, CORS, and
+    gives you both an RLS-scoped client and a service-role
+    (`supabaseAdmin`) client. `ai_usage` rows are written with the
+    service-role client, since that table's RLS intentionally has no
+    insert policy for regular users
+- **Brain Dump** (`features/brain-dump/`): write freely, tap **Organize
+  this**, review the extracted items grouped by category with everything
+  pre-selected, uncheck anything you don't want, confirm. Nothing is
+  created until you confirm (spec section 22) — the created tasks go
+  through the same local-first `createTask` path as manual task creation,
+  so they're offline-capable too
+- **"Plan my day"** card on Today (`features/ai/DailyPlanCard.tsx`):
+  optional, collapsed until tapped, never auto-loads. If the AI names a
+  single most-important task, that task gets a subtle highlighted border
+  in the list below — it doesn't reorder anything
+- **Deterministic Quick Add parser** (`lib/ai/quickAddParser.ts`, zero
+  AI, zero network): recognizes dates ("tomorrow", "next Friday", "in 3
+  days"), times ("3 PM"), and currency amounts, and picks a type (task /
+  event / bill) accordingly — exactly the spec's own examples ("Buy
+  groceries tomorrow", "Dentist Friday at 3 PM", "Electricity bill
+  ₱1,500 due Monday") pass as written. Wired into the task composer as a
+  tappable "Detected Friday · 3:00 PM — tap to use" suggestion that only
+  appears while no date has been set yet, so it never fights a deliberate
+  manual pick
+- **Honest quota UI** (`components/ai/AiLimitReachedNotice.tsx`): matches
+  the monetization spec's exact free-limit copy. Its "Explore Anchor Pro"
+  option shows the perk list and says plainly that purchasing isn't wired
+  up yet — no dead-end fake upgrade button
 
 ## Setup
 
@@ -74,7 +74,7 @@ conflict handling, and a subtle sync status indicator.
 npm install
 ```
 
-### 2. Create a Supabase project
+### 2. Create a Supabase project (if you haven't already)
 
 1. Go to [supabase.com](https://supabase.com) → New Project.
 2. Go to **Authentication → Sign In / Providers** and enable **Anonymous
@@ -90,14 +90,25 @@ cp .env.example .env
 
 ### 4. Run the database migrations, in order
 
-Open **SQL Editor** in your Supabase project and run each file in
-`supabase/migrations/` **in order**:
+1. `0001_init.sql`
+2. `0002_tasks.sql`
+3. `0003_calendar.sql`
 
-1. `0001_init.sql` — profiles, subscriptions, ai_usage, app_config
-2. `0002_tasks.sql` — categories (+ default-seeding trigger) and tasks
-3. `0003_calendar.sql` — calendars (+ default-seeding trigger) and events
+(No new migration for Phase 4 — it only adds an Edge Function.)
 
-### 5. Start the app
+### 5. Deploy the Edge Function
+
+```bash
+npx supabase login
+npx supabase link --project-ref <your-project-ref>
+npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+npx supabase functions deploy ai-assist
+```
+
+You'll need your own Anthropic API key (console.anthropic.com). The key
+lives only in this secret — it's never in the app bundle.
+
+### 6. Start the app
 
 ```bash
 npx expo start
@@ -105,40 +116,52 @@ npx expo start
 
 ## Verifying it works
 
-- Everything from Phase 2 (tasks, categories, calendar, events,
-  reminders) still works exactly the same from the UI's point of view
-- Turn on **Airplane Mode**, then create a task, edit it, complete it,
-  delete another one, create an event — all instant, no spinners, no
-  errors. The sync badge on Today shows **Offline**
-- Turn Airplane Mode back off — within a few seconds the badge moves
-  through **Saving…** to **Synced**, and if you check the Supabase table
-  editor, your offline changes are there
-- Force-quit the app while still offline with pending changes, then
-  reopen it (still offline) — your changes are still there, made purely
-  from the local database
-- Edit the same task's title twice in a row while offline — check the
-  Supabase row after reconnecting; it reflects only the final edit, not
-  an intermediate one (the queue coalesced them)
+- **Without deploying the Edge Function at all**, Quick Add detection
+  still works: create a task titled "Buy groceries tomorrow" and watch
+  the "Detected Tomorrow — tap to use" suggestion appear
+- Tap **+** → **Brain Dump**, write a few things ("finish the report,
+  buy milk, pay rent Friday"), tap **Organize this** — you should see a
+  categorized, pre-checked list; uncheck one, tap **Add N tasks**, and
+  confirm the right ones landed on Today
+- On Today, tap **Plan my day** — a short plan should appear, and if it
+  names a specific task, that task gets a highlighted border below
+- Use up your monthly AI actions (or lower `free_ai_monthly_limit` in
+  `app_config` to `0` temporarily) and try Brain Dump again — you should
+  see the honest limit-reached card, not a crash or a generic error
+
+## Please read before trusting this with real data
+
+The Edge Function code was written against Supabase's current documented
+conventions (verified by search at build time, since this SDK's
+recommended pattern changed recently — `withSupabase` from
+`@supabase/server` is now preferred over the older manual `Deno.serve` +
+manual CORS/JWT approach) and against Anthropic's Messages API tool-use
+format. **None of it has actually been deployed or run** — there's no
+live Supabase project or Anthropic API key in the environment this was
+built in. Before relying on it:
+
+- Deploy it and send it a real request (`supabase functions serve
+  ai-assist` locally first, then a real deploy) and confirm the response
+  shape actually matches what the client expects
+- Confirm `ctx.userClaims.id` is really where `@supabase/server` puts the
+  user id in your installed version — check `npm:@supabase/server`'s own
+  docs/changelog if this errors, since this is a newer package
+- Confirm the quota check's month-boundary math and the
+  `free_ai_monthly_limit` read behave as expected with real data in
+  `ai_usage`
+- Watch your Anthropic usage/billing dashboard the first few times —
+  nothing here caps *total* spend beyond the per-user monthly action
+  count
 
 ## What's intentionally not built yet
 
-- Week/day zoomed-in calendar views — only month + day-agenda exist so far
-- Calendar creation UI (the Pro "multiple calendars" perk) — schema and
-  entitlement flag exist, UI doesn't yet
-- The conflict-detection UX for overlapping events is a warning banner,
-  not the spec's full "Reschedule / Shorten / Keep anyway" dialog
-- Morning briefing / evening review (spec sections 32–33) — deferred to a
-  later phase
-- Categories and calendars are still read-only from the client (no
-  create/edit UI) - Phase 3's offline work covers their local caching,
-  but not making them editable
-- **A note on verification**: this update was built and type-checked
-  (`npx tsc --noEmit` passes clean) but not run on a physical device or
-  simulator in this environment - the sync engine's SQLite/Supabase
-  interplay is exactly the kind of thing worth exercising by hand (kill
-  the app mid-sync, toggle airplane mode mid-edit, etc.) before trusting
-  it with real data
-- No AI features — Phase 4
-- No paywall UI or actual billing integration — the entitlements *read*
-  layer exists so features can check `entitlements.canUseX` from day one,
-  but nothing sells anything yet
+- Task Breakdown (turning one task into subtasks) — needs a subtasks
+  schema/UI that doesn't exist yet
+- AI weekly review, AI expense categorization, AI document extraction —
+  later AI capabilities from spec section 21, not part of Phase 4's
+  scope (Brain Dump, Quick Add, Daily Planning)
+- Week/day zoomed-in calendar views, calendar-creation UI, subtasks,
+  Notes, Expenses, Bills, Documents, Habits, Shopping, Student Mode — all
+  still ahead (Phase 5+)
+- No paywall UI or actual billing integration — entitlements and quota
+  enforcement are real, but nothing sells anything yet

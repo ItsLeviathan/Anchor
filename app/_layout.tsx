@@ -33,6 +33,7 @@ export default function RootLayout() {
             <Stack.Screen name="add-sheet" options={{ presentation: 'modal' }} />
             <Stack.Screen name="task-new" options={{ presentation: 'modal' }} />
             <Stack.Screen name="event-new" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="brain-dump" options={{ presentation: 'modal' }} />
           </Stack>
         </AppProviders>
       </SafeAreaProvider>

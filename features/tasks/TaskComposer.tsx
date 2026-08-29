@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
@@ -7,6 +8,7 @@ import { DueDatePicker } from '../../components/tasks/DueDatePicker';
 import { PrioritySelector } from '../../components/tasks/PrioritySelector';
 import { RecurrenceSelector } from '../../components/tasks/RecurrenceSelector';
 import { Button, Input, Sheet } from '../../components/ui';
+import { parseQuickAdd } from '../../lib/ai/quickAddParser';
 import { useSession } from '../../lib/supabase/useSession';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { RecurrenceRule, TaskPriority } from '../../types';
@@ -47,6 +49,40 @@ export function TaskComposer() {
 
   const canSave = title.trim().length > 0 && Boolean(userId) && !createTask.isPending;
 
+  // Quick Add detection (spec section 20): purely local pattern matching,
+  // no AI/network call. Only offered while no date has been set yet, so it
+  // never fights with something the user picked deliberately.
+  const parsed = title.trim().length > 2 ? parseQuickAdd(title) : null;
+  const showDetection = Boolean(parsed?.dueDate) && !dueDate;
+
+  function applyDetected() {
+    if (!parsed?.dueDate) return;
+    const [year, month, day] = parsed.dueDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    if (parsed.dueTime) {
+      const [hour, minute] = parsed.dueTime.split(':').map(Number);
+      date.setHours(hour, minute, 0, 0);
+    }
+    setDueDate(date);
+    setTitle(parsed.title);
+    setShowMore(true);
+  }
+
+  function formatDetected(): string {
+    if (!parsed?.dueDate) return '';
+    const [year, month, day] = parsed.dueDate.split('-').map(Number);
+    const dateLabel = new Date(year, month - 1, day).toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+    if (!parsed.dueTime) return dateLabel;
+    const [hour, minute] = parsed.dueTime.split(':').map(Number);
+    const timeSample = new Date();
+    timeSample.setHours(hour, minute, 0, 0);
+    return `${dateLabel} · ${timeSample.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
+  }
+
   function handleDueDateChange(date: Date | null) {
     setDueDate(date);
     // A recurrence rule without a due date has nothing to repeat from.
@@ -81,6 +117,18 @@ export function TaskComposer() {
           onChangeText={setTitle}
           returnKeyType="done"
         />
+
+        {showDetection ? (
+          <Pressable
+            onPress={applyDetected}
+            style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}
+          >
+            <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
+            <Text style={[typography.caption, { color: colors.accent, marginLeft: spacing.xs }]}>
+              Detected {formatDetected()} — tap to use
+            </Text>
+          </Pressable>
+        ) : null}
 
         {!showMore ? (
           <Pressable onPress={() => setShowMore(true)} style={{ marginTop: spacing.md }}>

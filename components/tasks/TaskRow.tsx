@@ -11,11 +11,12 @@ import type { Task, TaskPriority } from '../../types';
 interface TaskRowProps {
   task: Task;
   categoryColor?: string;
+  highlighted?: boolean;
   onComplete: (task: Task) => void;
   onDelete: (task: Task) => void;
 }
 
-export function TaskRow({ task, categoryColor, onComplete, onDelete }: TaskRowProps) {
+export function TaskRow({ task, categoryColor, highlighted, onComplete, onDelete }: TaskRowProps) {
   const { colors, spacing, radius, typography } = useTheme();
   const swipeableRef = React.useRef<React.ComponentRef<typeof ReanimatedSwipeable>>(null);
   const overdue = isOverdue(task);
@@ -61,7 +62,18 @@ export function TaskRow({ task, categoryColor, onComplete, onDelete }: TaskRowPr
         </Pressable>
       )}
     >
-      <View style={[styles.row, { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md }]}>
+      <View
+        style={[
+          styles.row,
+          {
+            backgroundColor: colors.surface,
+            borderRadius: radius.lg,
+            padding: spacing.md,
+            borderWidth: highlighted ? 1.5 : 0,
+            borderColor: highlighted ? colors.accent : 'transparent',
+          },
+        ]}
+      >
         <Pressable
           accessibilityRole="checkbox"
           accessibilityState={{ checked: isCompleted }}

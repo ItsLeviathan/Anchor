@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategorySummaryRow } from '../../../components/categories/CategorySummaryRow';
 import { TaskRow } from '../../../components/tasks/TaskRow';
 import { EmptyState, SyncStatusBadge } from '../../../components/ui';
+import { DailyPlanCard } from '../../../features/ai/DailyPlanCard';
 import { useCategories } from '../../../features/categories/useCategories';
 import { useCompleteTask, useDeleteTask, useReopenTask, useTasks } from '../../../features/tasks/useTasks';
 import { useSession } from '../../../lib/supabase/useSession';
@@ -33,6 +34,7 @@ export default function TodayScreen() {
   const deleteTask = useDeleteTask(userId);
 
   const todayTasks = useMemo(() => selectTodayTasks(tasks), [tasks]);
+  const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
 
   const categoryById = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories]);
 
@@ -92,6 +94,8 @@ export default function TodayScreen() {
               : `You have ${todayTasks.length} ${todayTasks.length === 1 ? 'thing' : 'things'} that matter today.`}
           </Text>
 
+          <DailyPlanCard onFocusTask={setFocusTaskId} />
+
           {todayTasks.length > 0 ? (
             <View style={{ marginBottom: spacing.xl }}>
               <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.xs }]}>TODAY</Text>
@@ -101,6 +105,7 @@ export default function TodayScreen() {
                     key={task.id}
                     task={task}
                     categoryColor={task.categoryId ? categoryById.get(task.categoryId)?.color : undefined}
+                    highlighted={task.id === focusTaskId}
                     onComplete={handleComplete}
                     onDelete={handleDelete}
                   />
