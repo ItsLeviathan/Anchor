@@ -1,18 +1,28 @@
 import { Stack } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initDatabase } from '../lib/database/db';
 import '../lib/notifications/setup';
+import { useSession } from '../lib/supabase/useSession';
+import { useSyncLifecycle } from '../lib/sync/useSyncLifecycle';
 import { AppProviders } from '../providers/AppProviders';
 
 export default function RootLayout() {
+  const [isDbReady, setIsDbReady] = useState(false);
+  const { session } = useSession();
+
   useEffect(() => {
-    initDatabase().catch((err) => {
-      console.error('Failed to initialize local database', err);
-    });
+    initDatabase()
+      .then(() => setIsDbReady(true))
+      .catch((err) => console.error('Failed to initialize local database', err));
   }, []);
+
+  // Don't touch local_tasks/local_events/etc. before initDatabase has
+  // actually created them - passing undefined here keeps the lifecycle
+  // hook a no-op until then.
+  useSyncLifecycle(isDbReady ? session?.user.id : undefined);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

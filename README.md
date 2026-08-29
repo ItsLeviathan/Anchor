@@ -1,8 +1,8 @@
-# Anchor — Phase 1 + Phase 2
+# Anchor — Phase 1 + Phase 2 + Phase 3
 
-Phase 1 (foundation) is complete. Phase 2 (Core Anchor) is now complete:
-**Tasks, Categories, recurring tasks, Calendar, Events, and Reminders**
-are all done.
+Phases 1 and 2 are complete. **Phase 3 (Offline) is now done too**: tasks
+and events are genuinely local-first, with a background sync engine,
+conflict handling, and a subtle sync status indicator.
 
 ## What's here
 
@@ -14,65 +14,57 @@ are all done.
 - Anonymous Supabase auth (`lib/supabase/useSession.ts`) — the app never
   forces sign-up
 - Secure, chunked SecureStore-backed session storage
-- A minimal local-first SQLite layer (`lib/database/db.ts`)
 - A centralized entitlements layer (`lib/entitlements/`) per the
   monetization spec, backed by `subscriptions` and `app_config` tables
 - Zustand for local UI state, TanStack Query for server state
 
-**Phase 2 — Tasks & Categories**
-- `categories` table, auto-seeded with the 10 default categories the
-  moment a profile is created (spec section 29)
-- `tasks` table: title, description, due date/time, priority, status,
-  category, and an optional recurrence rule
-- Full task CRUD (`features/tasks/`) with optimistic completion/deletion
-- Deterministic task prioritization (`lib/tasks/prioritization.ts`, no AI)
-  driving what shows up on **Today**
-- Recurring tasks: completing one generates only its next occurrence
-  (`lib/tasks/recurrence.ts`), never a batch of future rows
-- Quick task creation with progressive disclosure (spec section 44)
-- Swipeable task rows (swipe to complete / delete)
+**Phase 2 — Tasks, Categories, Calendar, Events, Reminders**
+- Full task CRUD, deterministic prioritization (no AI) driving **Today**,
+  recurring tasks, categories, month calendar + day agenda, events,
+  lightweight scheduling-conflict warnings, and local notification
+  reminders for both tasks and events
+- `entitlements.canUseMultipleCalendars` added, matching the "Multiple
+  calendars" Anchor Pro perk
 
-**Phase 2 — Calendar & Events**
-- `calendars` table, auto-seeded with one default calendar per user.
-  Creating *additional* calendars is an Anchor Pro perk ("Multiple
-  calendars" in the monetization spec) — the schema and a new
-  `entitlements.canUseMultipleCalendars` flag exist now, but the calendar-
-  creation UI itself isn't built yet, so every event currently goes on the
-  single default calendar
-- `events` table: title, location, start/end, all-day flag
-- **Calendar** tab shows a real month grid (with a dot on any day that has
-  a task due or an event) and a day agenda combining that day's tasks and
-  events, sorted by time
-- Event creation (`features/events/EventComposer.tsx`) with an all-day
-  toggle and start/end pickers
-- Lightweight scheduling-conflict detection (spec section 15): an
-  overlapping event shows an inline warning naming the conflict. This is
-  intentionally non-blocking — there's no modal "Reschedule / Shorten /
-  Keep anyway" flow yet, just a visible nudge you can also ignore
-- `components/tasks/DueDatePicker.tsx` was generalized with a
-  `mode="date"` option (for all-day events) and is now shared by both the
-  task and event composers
-
-**Phase 2 — Reminders (this update)**
-- Local notifications via `expo-notifications` — no server/push
-  infrastructure involved, so these work in Expo Go with no dev build
-- Tasks with a due date get a local reminder automatically: at the due
-  time if one is set, or 9:00 AM on the due date otherwise. Content is
-  specific per spec section 17 ("Pay electricity bill" → notification
-  titled with the task, not a generic "Reminder")
-- Events get a reminder 15 minutes before they start (all-day events are
-  skipped — there's no single meaningful "15 minutes before" for those)
-- Reminders are automatically rescheduled when a task/event's time
-  changes, and cancelled when it's completed or deleted. Completing a
-  recurring task also schedules the reminder for its freshly-spawned next
-  occurrence
-- Notification permission is only requested the first time it's actually
-  needed (creating your first dated task or event) — not on app launch —
-  to keep with the "calm" design philosophy of not front-loading prompts
-- A **Task & event reminders** on/off toggle on Profile (spec section 16:
-  "users must have granular notification controls"). This preference is
-  device-local by design — it's about what this device shows you, not
-  something that needs to sync
+**Phase 3 — Offline (this update)**
+- **Local-first tasks and events.** Reads and writes go straight to
+  SQLite (`local_tasks`, `local_events`) - there is no network call in
+  the read path at all, and creating/editing/completing/deleting
+  something never waits on connectivity
+- **Client-generated permanent IDs** (`lib/sync/ids.ts`, via
+  `expo-crypto`): every task/event gets its id on the device at creation
+  time, and that's the same id it has on the server once synced. This is
+  the architectural choice that avoids the classic "local id vs. server
+  id" remapping problem entirely
+- **A sync queue** (`lib/sync/queue.ts`) that coalesces repeated edits to
+  the same entity into one pending operation - editing an offline task
+  three times before it ever syncs produces one queued 'upsert' with the
+  latest data, not three
+- **A sync engine** (`lib/sync/engine.ts`):
+  - `flushQueue()` pushes every queued change to Supabase, one at a time;
+    one failing entry doesn't block the rest
+  - `pullRemoteChanges()` merges server state into the local tables on
+    app start and on reconnect, skipping any row with a pending local
+    edit so a pull can't clobber work in progress, and pruning local rows
+    that no longer exist remotely (e.g. deleted via the Supabase
+    dashboard)
+  - **Documented conflict rule**: last-write-wins via unconditional
+    upsert. Anchor is single-user, so real conflicts only happen if the
+    same account edits the same row from two devices while one was
+    offline - whichever device's change reaches the server last wins.
+    This is a deliberate simplification; true field-level merging isn't
+    worth the complexity unless concurrent multi-device editing becomes
+    common enough to cause real data loss
+- **Sync triggers** (`lib/sync/useSyncLifecycle.ts`): app start (pull
+  then flush), connectivity actually being restored via NetInfo (flush
+  then pull), and returning to the foreground while already online (a
+  lightweight flush safety net)
+- **Subtle sync status** (spec section 49): a small dot + label -
+  Synced / Saving… / Offline / Waiting to sync - shown on Today, backed
+  by a Zustand store (`store/useSyncStore.ts`) so any screen could show
+  it without re-deriving the logic
+- Categories and calendars (read-only so far) are also cached locally so
+  their pickers keep working offline
 
 ## Setup
 
@@ -113,35 +105,40 @@ npx expo start
 
 ## Verifying it works
 
-- Tap **+** → **Task**, set a due date/time a few minutes in the future,
-  save it, then background the app (or lock the phone) — the reminder
-  fires at the due time
-- Tap **+** → **Event** (or the **+** icon on the Calendar tab): set a
-  start time a few minutes out, save — a reminder fires 15 minutes before
-  (or immediately, if the start is under 15 minutes away, no reminder
-  fires since it'd be in the past)
-- Complete or delete a task/event before its reminder time — the
-  notification never fires (it was cancelled)
-- Turn off **Task & event reminders** on Profile — no new reminders get
-  scheduled until you turn it back on
-- Everything from the Tasks/Categories and Calendar/Events updates still
-  works the same way
+- Everything from Phase 2 (tasks, categories, calendar, events,
+  reminders) still works exactly the same from the UI's point of view
+- Turn on **Airplane Mode**, then create a task, edit it, complete it,
+  delete another one, create an event — all instant, no spinners, no
+  errors. The sync badge on Today shows **Offline**
+- Turn Airplane Mode back off — within a few seconds the badge moves
+  through **Saving…** to **Synced**, and if you check the Supabase table
+  editor, your offline changes are there
+- Force-quit the app while still offline with pending changes, then
+  reopen it (still offline) — your changes are still there, made purely
+  from the local database
+- Edit the same task's title twice in a row while offline — check the
+  Supabase row after reconnecting; it reflects only the final edit, not
+  an intermediate one (the queue coalesced them)
 
 ## What's intentionally not built yet
 
 - Week/day zoomed-in calendar views — only month + day-agenda exist so far
 - Calendar creation UI (the Pro "multiple calendars" perk) — schema and
   entitlement flag exist, UI doesn't yet
-- The conflict-detection UX is a warning banner, not the spec's full
-  "Reschedule / Shorten / Keep anyway" dialog
-- Morning briefing / evening review (spec sections 32–33) — related to
-  but distinct from Reminders, and deferred to a later phase
-- No sync engine — task/event changes go straight to Supabase; true
-  offline creation/editing (queued locally, synced later) is Phase 3
+- The conflict-detection UX for overlapping events is a warning banner,
+  not the spec's full "Reschedule / Shorten / Keep anyway" dialog
+- Morning briefing / evening review (spec sections 32–33) — deferred to a
+  later phase
+- Categories and calendars are still read-only from the client (no
+  create/edit UI) - Phase 3's offline work covers their local caching,
+  but not making them editable
+- **A note on verification**: this update was built and type-checked
+  (`npx tsc --noEmit` passes clean) but not run on a physical device or
+  simulator in this environment - the sync engine's SQLite/Supabase
+  interplay is exactly the kind of thing worth exercising by hand (kill
+  the app mid-sync, toggle airplane mode mid-edit, etc.) before trusting
+  it with real data
 - No AI features — Phase 4
 - No paywall UI or actual billing integration — the entitlements *read*
   layer exists so features can check `entitlements.canUseX` from day one,
   but nothing sells anything yet
-
-
-

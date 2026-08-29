@@ -1,18 +1,18 @@
 import * as SQLite from 'expo-sqlite';
 
 /**
- * Local-first persistence, Phase 1 scope.
+ * Local-first persistence.
  *
- * This only proves the pattern: writes land locally first and are readable
- * immediately, without waiting on the network. The full offline sync engine
- * (pending queue, conflict resolution, sync status) is built in Phase 3 —
- * this file is deliberately small so it's easy to extend then rather than
- * rewritten.
+ * This module owns the single SQLite connection and the full local schema.
+ * Phase 3 added the tables that make tasks/events genuinely offline-capable
+ * (local_tasks, local_events, local_categories, local_calendars, and the
+ * sync_queue that reconciles them with Supabase) - see lib/sync/ for the
+ * engine that reads and writes them via getDb().
  */
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-function getDb(): Promise<SQLite.SQLiteDatabase> {
+export function getDb(): Promise<SQLite.SQLiteDatabase> {
   if (!dbPromise) {
     dbPromise = SQLite.openDatabaseAsync('anchor.db');
   }
@@ -39,6 +39,80 @@ export async function initDatabase(): Promise<void> {
     CREATE TABLE IF NOT EXISTS local_settings (
       key TEXT PRIMARY KEY NOT NULL,
       value TEXT NOT NULL
+    );
+
+    -- Phase 3: local-first domain tables. Columns mirror the Supabase
+    -- tables 1:1 (snake_case, same names) so mapping code can stay
+    -- identical whether a row came from the network or from here. The id
+    -- is the same UUID the row will use on the server too (client-generated
+    -- at creation time - see lib/sync/ids.ts) - there's no separate
+    -- local-id/server-id pair to reconcile, which is what keeps the sync
+    -- engine simple.
+    CREATE TABLE IF NOT EXISTS local_tasks (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      category_id TEXT,
+      title TEXT NOT NULL,
+      description TEXT,
+      due_date TEXT,
+      due_time TEXT,
+      priority TEXT NOT NULL,
+      status TEXT NOT NULL,
+      estimated_duration_minutes INTEGER,
+      actual_duration_minutes INTEGER,
+      recurrence_rule TEXT,
+      completed_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted INTEGER NOT NULL DEFAULT 0,
+      synced_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS local_events (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      calendar_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      location TEXT,
+      description TEXT,
+      start_at TEXT NOT NULL,
+      end_at TEXT NOT NULL,
+      all_day INTEGER NOT NULL DEFAULT 0,
+      recurrence_rule TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted INTEGER NOT NULL DEFAULT 0,
+      synced_at TEXT
+    );
+    -- Read-only local mirrors (no queue entries - see lib/sync/engine.ts)
+    -- so category/calendar pickers still work while offline.
+    CREATE TABLE IF NOT EXISTS local_categories (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      color TEXT NOT NULL,
+      icon TEXT,
+      is_default INTEGER NOT NULL DEFAULT 0,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS local_calendars (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      color TEXT NOT NULL,
+      is_default INTEGER NOT NULL DEFAULT 0
+    );
+    -- Every offline create/update/delete against local_tasks/local_events
+    -- enqueues exactly one row here (see lib/sync/queue.ts, which coalesces
+    -- repeated edits to the same entity into a single queued operation).
+    CREATE TABLE IF NOT EXISTS sync_queue (
+      id TEXT PRIMARY KEY NOT NULL,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      operation TEXT NOT NULL,
+      payload TEXT,
+      created_at TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      last_error TEXT
     );
   `);
 }

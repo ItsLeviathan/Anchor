@@ -1,16 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import type { Task } from '../../types';
-import { computeNextDueDate } from '../../lib/tasks/recurrence';
 import { cancelTaskReminder, scheduleTaskReminder } from '../../lib/notifications/scheduler';
+import { computeNextDueDate } from '../../lib/tasks/recurrence';
+import type { Task } from '../../types';
 import { createTask, deleteTask, fetchTasks, setTaskStatus, updateTask } from './api';
 
 const TASKS_KEY = ['tasks'] as const;
 
+/**
+ * Reads come from the local SQLite repo (features/tasks/api.ts), which is
+ * why this works identically online or offline - there's no network call
+ * in the read path at all. Writes go local-first too; the sync engine
+ * (lib/sync/engine.ts) reconciles with Supabase in the background.
+ */
 export function useTasks(userId: string | undefined) {
   return useQuery({
     queryKey: [...TASKS_KEY, userId],
-    queryFn: fetchTasks,
+    queryFn: () => fetchTasks(userId as string),
     enabled: Boolean(userId),
   });
 }
@@ -40,14 +46,11 @@ export function useUpdateTask(userId: string | undefined) {
 }
 
 /**
- * Completing and reopening are the two actions the user triggers constantly
- * (checkbox taps, swipes), so both update the cached list optimistically —
- * the UI reflects the change immediately rather than waiting on the round
- * trip, and rolls back only if the request actually fails.
- *
  * Completing a recurring task also spawns its next single occurrence (see
  * lib/tasks/recurrence.ts) — Anchor never pre-creates a batch of future
- * rows for a recurring task, only the next one, generated lazily.
+ * rows for a recurring task, only the next one, generated lazily. Both the
+ * completion and the new occurrence are local-first writes, queued for
+ * sync like any other change.
  */
 export function useCompleteTask(userId: string | undefined) {
   const queryClient = useQueryClient();
@@ -73,24 +76,7 @@ export function useCompleteTask(userId: string | undefined) {
 
       return completed;
     },
-    onMutate: async (task) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<Task[]>(queryKey);
-
-      queryClient.setQueryData<Task[]>(queryKey, (old) =>
-        old?.map((t) =>
-          t.id === task.id ? { ...t, status: 'completed', completedAt: new Date().toISOString() } : t
-        )
-      );
-
-      return { previous };
-    },
-    onError: (_err, _task, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(queryKey, context.previous);
-      }
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
     },
   });
@@ -106,22 +92,7 @@ export function useReopenTask(userId: string | undefined) {
       await scheduleTaskReminder(reopened);
       return reopened;
     },
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<Task[]>(queryKey);
-
-      queryClient.setQueryData<Task[]>(queryKey, (old) =>
-        old?.map((t) => (t.id === id ? { ...t, status: 'pending', completedAt: null } : t))
-      );
-
-      return { previous };
-    },
-    onError: (_err, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(queryKey, context.previous);
-      }
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
     },
   });
@@ -136,20 +107,7 @@ export function useDeleteTask(userId: string | undefined) {
       await cancelTaskReminder(id);
       await deleteTask(id);
     },
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previous = queryClient.getQueryData<Task[]>(queryKey);
-
-      queryClient.setQueryData<Task[]>(queryKey, (old) => old?.filter((task) => task.id !== id));
-
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(queryKey, context.previous);
-      }
-    },
-    onSettled: () => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
     },
   });

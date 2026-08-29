@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategorySummaryRow } from '../../../components/categories/CategorySummaryRow';
 import { TaskRow } from '../../../components/tasks/TaskRow';
-import { EmptyState } from '../../../components/ui';
+import { EmptyState, SyncStatusBadge } from '../../../components/ui';
 import { useCategories } from '../../../features/categories/useCategories';
 import { useCompleteTask, useDeleteTask, useReopenTask, useTasks } from '../../../features/tasks/useTasks';
 import { useSession } from '../../../lib/supabase/useSession';
@@ -70,7 +70,12 @@ export default function TodayScreen() {
         paddingBottom: spacing.xxl,
       }}
     >
-      <Text style={[typography.largeTitle, { color: colors.textPrimary }]}>{getGreeting()}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <Text style={[typography.largeTitle, { color: colors.textPrimary }]}>{getGreeting()}</Text>
+        <View style={{ marginTop: spacing.xs }}>
+          <SyncStatusBadge />
+        </View>
+      </View>
       <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs }]}>
         {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
       </Text>

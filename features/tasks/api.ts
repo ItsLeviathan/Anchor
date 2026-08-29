@@ -1,23 +1,7 @@
-import { supabase } from '../../lib/supabase/client';
+import { getLocalTask, getLocalTasks, upsertLocalTask, type TaskRow } from '../../lib/database/localTasks';
+import { enqueueDelete, enqueueUpsert } from '../../lib/sync/engine';
+import { generateId } from '../../lib/sync/ids';
 import type { RecurrenceRule, Task, TaskPriority, TaskStatus } from '../../types';
-
-interface TaskRow {
-  id: string;
-  user_id: string;
-  category_id: string | null;
-  title: string;
-  description: string | null;
-  due_date: string | null;
-  due_time: string | null;
-  priority: TaskPriority;
-  status: TaskStatus;
-  estimated_duration_minutes: number | null;
-  actual_duration_minutes: number | null;
-  recurrence_rule: RecurrenceRule | null;
-  completed_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
 
 function mapRow(row: TaskRow): Task {
   return {
@@ -28,27 +12,20 @@ function mapRow(row: TaskRow): Task {
     description: row.description,
     dueDate: row.due_date,
     dueTime: row.due_time,
-    priority: row.priority,
-    status: row.status,
+    priority: row.priority as TaskPriority,
+    status: row.status as TaskStatus,
     estimatedDurationMinutes: row.estimated_duration_minutes,
     actualDurationMinutes: row.actual_duration_minutes,
-    recurrenceRule: row.recurrence_rule,
+    recurrenceRule: (row.recurrence_rule as unknown as RecurrenceRule | null) ?? null,
     completedAt: row.completed_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
-/** Fetches all non-cancelled tasks; Today/lists filter further client-side. */
-export async function fetchTasks(): Promise<Task[]> {
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .neq('status', 'cancelled')
-    .order('due_date', { ascending: true, nullsFirst: false });
-
-  if (error) throw error;
-  return (data as TaskRow[]).map(mapRow);
+export async function fetchTasks(userId: string): Promise<Task[]> {
+  const rows = await getLocalTasks(userId);
+  return rows.map(mapRow);
 }
 
 export interface CreateTaskInput {
@@ -62,22 +39,29 @@ export interface CreateTaskInput {
 }
 
 export async function createTask(input: CreateTaskInput): Promise<Task> {
-  const { data, error } = await supabase
-    .from('tasks')
-    .insert({
-      user_id: input.userId,
-      title: input.title.trim(),
-      category_id: input.categoryId ?? null,
-      due_date: input.dueDate ?? null,
-      due_time: input.dueTime ?? null,
-      priority: input.priority ?? 'medium',
-      recurrence_rule: input.recurrenceRule ?? null,
-    })
-    .select('*')
-    .single();
+  const now = new Date().toISOString();
+  const row: TaskRow = {
+    id: generateId(),
+    user_id: input.userId,
+    category_id: input.categoryId ?? null,
+    title: input.title.trim(),
+    description: null,
+    due_date: input.dueDate ?? null,
+    due_time: input.dueTime ?? null,
+    priority: input.priority ?? 'medium',
+    status: 'pending',
+    estimated_duration_minutes: null,
+    actual_duration_minutes: null,
+    recurrence_rule: (input.recurrenceRule as unknown as Record<string, unknown>) ?? null,
+    completed_at: null,
+    created_at: now,
+    updated_at: now,
+  };
 
-  if (error) throw error;
-  return mapRow(data as TaskRow);
+  await upsertLocalTask(row);
+  await enqueueUpsert('task', row.id, row as unknown as Record<string, unknown>);
+
+  return mapRow(row);
 }
 
 export interface UpdateTaskInput {
@@ -90,41 +74,42 @@ export interface UpdateTaskInput {
 }
 
 export async function updateTask({ id, ...patch }: UpdateTaskInput): Promise<Task> {
-  const { data, error } = await supabase
-    .from('tasks')
-    .update({
-      ...(patch.title !== undefined ? { title: patch.title.trim() } : {}),
-      ...(patch.categoryId !== undefined ? { category_id: patch.categoryId } : {}),
-      ...(patch.dueDate !== undefined ? { due_date: patch.dueDate } : {}),
-      ...(patch.dueTime !== undefined ? { due_time: patch.dueTime } : {}),
-      ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .select('*')
-    .single();
+  const existing = await getLocalTask(id);
+  if (!existing) throw new Error(`Task ${id} not found locally`);
 
-  if (error) throw error;
-  return mapRow(data as TaskRow);
+  const row: TaskRow = {
+    ...existing,
+    title: patch.title !== undefined ? patch.title.trim() : existing.title,
+    category_id: patch.categoryId !== undefined ? patch.categoryId : existing.category_id,
+    due_date: patch.dueDate !== undefined ? patch.dueDate : existing.due_date,
+    due_time: patch.dueTime !== undefined ? patch.dueTime : existing.due_time,
+    priority: patch.priority !== undefined ? patch.priority : existing.priority,
+    updated_at: new Date().toISOString(),
+  };
+
+  await upsertLocalTask(row);
+  await enqueueUpsert('task', row.id, row as unknown as Record<string, unknown>);
+
+  return mapRow(row);
 }
 
 export async function setTaskStatus(id: string, status: TaskStatus): Promise<Task> {
-  const { data, error } = await supabase
-    .from('tasks')
-    .update({
-      status,
-      completed_at: status === 'completed' ? new Date().toISOString() : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .select('*')
-    .single();
+  const existing = await getLocalTask(id);
+  if (!existing) throw new Error(`Task ${id} not found locally`);
 
-  if (error) throw error;
-  return mapRow(data as TaskRow);
+  const row: TaskRow = {
+    ...existing,
+    status,
+    completed_at: status === 'completed' ? new Date().toISOString() : null,
+    updated_at: new Date().toISOString(),
+  };
+
+  await upsertLocalTask(row);
+  await enqueueUpsert('task', row.id, row as unknown as Record<string, unknown>);
+
+  return mapRow(row);
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  const { error } = await supabase.from('tasks').delete().eq('id', id);
-  if (error) throw error;
+  await enqueueDelete('task', id);
 }

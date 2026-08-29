@@ -1,13 +1,6 @@
-import { supabase } from '../../lib/supabase/client';
+import { getLocalCalendars } from '../../lib/database/localCalendars';
+import type { CalendarRow } from '../../lib/database/localCalendars';
 import type { Calendar } from '../../types';
-
-interface CalendarRow {
-  id: string;
-  user_id: string;
-  name: string;
-  color: string;
-  is_default: boolean;
-}
 
 function mapRow(row: CalendarRow): Calendar {
   return {
@@ -19,12 +12,8 @@ function mapRow(row: CalendarRow): Calendar {
   };
 }
 
-export async function fetchCalendars(): Promise<Calendar[]> {
-  const { data, error } = await supabase
-    .from('calendars')
-    .select('*')
-    .order('is_default', { ascending: false });
-
-  if (error) throw error;
-  return (data as CalendarRow[]).map(mapRow);
+/** Same pattern as categories: served from the local cache the sync engine's pull step keeps fresh. */
+export async function fetchCalendars(userId: string): Promise<Calendar[]> {
+  const rows = await getLocalCalendars(userId);
+  return rows.map(mapRow);
 }

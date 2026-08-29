@@ -8,7 +8,7 @@ const EVENTS_KEY = ['events'] as const;
 export function useEvents(userId: string | undefined) {
   return useQuery({
     queryKey: [...EVENTS_KEY, userId],
-    queryFn: fetchEvents,
+    queryFn: () => fetchEvents(userId as string),
     enabled: Boolean(userId),
   });
 }

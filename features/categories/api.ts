@@ -1,15 +1,6 @@
-import { supabase } from '../../lib/supabase/client';
+import { getLocalCategories } from '../../lib/database/localCategories';
 import type { Category } from '../../types';
-
-interface CategoryRow {
-  id: string;
-  user_id: string;
-  name: string;
-  color: string;
-  icon: string | null;
-  is_default: boolean;
-  sort_order: number;
-}
+import type { CategoryRow } from '../../lib/database/localCategories';
 
 function mapRow(row: CategoryRow): Category {
   return {
@@ -23,12 +14,13 @@ function mapRow(row: CategoryRow): Category {
   };
 }
 
-export async function fetchCategories(): Promise<Category[]> {
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .order('sort_order', { ascending: true });
-
-  if (error) throw error;
-  return (data as CategoryRow[]).map(mapRow);
+/**
+ * Categories are read-only from the client for now (no create/edit UI
+ * yet), so this just serves the local cache that the sync engine's pull
+ * step keeps fresh - no direct network call needed, which is what makes
+ * category pickers work offline.
+ */
+export async function fetchCategories(userId: string): Promise<Category[]> {
+  const rows = await getLocalCategories(userId);
+  return rows.map(mapRow);
 }
