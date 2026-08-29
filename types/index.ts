@@ -54,6 +54,55 @@ export interface Calendar {
   isDefault: boolean;
 }
 
+export type MoneyCategory =
+  | 'Food'
+  | 'Transportation'
+  | 'Bills'
+  | 'Shopping'
+  | 'Entertainment'
+  | 'School'
+  | 'Health'
+  | 'Personal'
+  | 'Other';
+
+export type ExpenseType = 'income' | 'expense';
+
+export interface Expense {
+  id: string;
+  userId: string;
+  type: ExpenseType;
+  amount: number;
+  currency: string;
+  category: MoneyCategory;
+  /** 'YYYY-MM-DD' */
+  date: string;
+  paymentMethod: string | null;
+  notes: string | null;
+  recurrenceRule: RecurrenceRule | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type BillStatus = 'unpaid' | 'paid';
+
+export interface Bill {
+  id: string;
+  userId: string;
+  name: string;
+  amount: number;
+  currency: string;
+  category: MoneyCategory;
+  /** 'YYYY-MM-DD' */
+  dueDate: string;
+  paymentMethod: string | null;
+  notes: string | null;
+  recurrenceRule: RecurrenceRule | null;
+  status: BillStatus;
+  paidAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface CalendarEvent {
   id: string;
   userId: string;

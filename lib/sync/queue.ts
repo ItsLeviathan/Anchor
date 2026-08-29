@@ -1,7 +1,7 @@
 import { getDb } from '../database/db';
 import { generateId } from './ids';
 
-export type SyncEntityType = 'task' | 'event';
+export type SyncEntityType = 'task' | 'event' | 'expense' | 'bill';
 export type SyncOperation = 'upsert' | 'delete';
 
 export interface QueueEntry {

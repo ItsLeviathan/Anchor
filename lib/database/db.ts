@@ -83,6 +83,41 @@ export async function initDatabase(): Promise<void> {
       deleted INTEGER NOT NULL DEFAULT 0,
       synced_at TEXT
     );
+    -- Phase 5: expenses and bills, same local-first pattern as tasks/events.
+    CREATE TABLE IF NOT EXISTS local_expenses (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT NOT NULL,
+      category TEXT NOT NULL,
+      date TEXT NOT NULL,
+      payment_method TEXT,
+      notes TEXT,
+      recurrence_rule TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted INTEGER NOT NULL DEFAULT 0,
+      synced_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS local_bills (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT NOT NULL,
+      category TEXT NOT NULL,
+      due_date TEXT NOT NULL,
+      payment_method TEXT,
+      notes TEXT,
+      recurrence_rule TEXT,
+      status TEXT NOT NULL,
+      paid_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted INTEGER NOT NULL DEFAULT 0,
+      synced_at TEXT
+    );
     -- Read-only local mirrors (no queue entries - see lib/sync/engine.ts)
     -- so category/calendar pickers still work while offline.
     CREATE TABLE IF NOT EXISTS local_categories (

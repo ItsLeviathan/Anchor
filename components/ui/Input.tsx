@@ -3,7 +3,7 @@ import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
 
-export function Input(props: TextInputProps) {
+export function Input({ style, ...props }: TextInputProps) {
   const { colors, spacing, radius, typography } = useTheme();
 
   return (
@@ -20,6 +20,7 @@ export function Input(props: TextInputProps) {
           paddingVertical: spacing.sm + 4,
           paddingHorizontal: spacing.md,
         },
+        style,
       ]}
       {...props}
     />

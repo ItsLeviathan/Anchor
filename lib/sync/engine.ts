@@ -7,7 +7,6 @@ import {
   markTaskSynced,
   removeLocalTask,
   upsertLocalTask,
-  type TaskRow,
 } from '../database/localTasks';
 import {
   getLocalEventIds,
@@ -16,8 +15,23 @@ import {
   markEventSynced,
   removeLocalEvent,
   upsertLocalEvent,
-  type EventRow,
 } from '../database/localEvents';
+import {
+  getLocalExpenseIds,
+  hasExpenseEverSynced,
+  markExpenseDeletedLocally,
+  markExpenseSynced,
+  removeLocalExpense,
+  upsertLocalExpense,
+} from '../database/localExpenses';
+import {
+  getLocalBillIds,
+  hasBillEverSynced,
+  markBillDeletedLocally,
+  markBillSynced,
+  removeLocalBill,
+  upsertLocalBill,
+} from '../database/localBills';
 import { useSyncStore } from '../../store/useSyncStore';
 import {
   countPending,
@@ -33,6 +47,8 @@ import { fetchRemoteCalendars } from './remoteCalendars';
 import { fetchRemoteCategories } from './remoteCategories';
 import { deleteRemoteEvent, fetchRemoteEvents, upsertRemoteEvent } from './remoteEvents';
 import { deleteRemoteTask, fetchRemoteTasks, upsertRemoteTask } from './remoteTasks';
+import { deleteRemoteExpense, fetchRemoteExpenses, upsertRemoteExpense } from './remoteExpenses';
+import { deleteRemoteBill, fetchRemoteBills, upsertRemoteBill } from './remoteBills';
 
 /**
  * Conflict resolution rule (spec section 38 requires one to be defined):
@@ -45,6 +61,75 @@ import { deleteRemoteTask, fetchRemoteTasks, upsertRemoteTask } from './remoteTa
  * multi-device editing is common enough to cause real data loss
  * complaints, which isn't the situation Anchor is in yet.
  */
+
+/**
+ * Every offline-capable entity type plugs into the engine through one of
+ * these adapters. Adding a future type (documents, notes, habits,
+ * shopping items) means writing a local repo + a remote repo (same shape
+ * as everything in lib/database/local*.ts and lib/sync/remote*.ts) and
+ * registering it here - flushQueue/pullRemoteChanges/enqueueDelete never
+ * need to change.
+ */
+interface EntityAdapter {
+  fetchLocalIds: (userId: string) => Promise<string[]>;
+  hasEverSynced: (id: string) => Promise<boolean>;
+  markDeletedLocally: (id: string) => Promise<void>;
+  markSynced: (id: string) => Promise<void>;
+  removeLocal: (id: string) => Promise<void>;
+  upsertLocal: (row: any, options?: { markSynced?: boolean }) => Promise<void>;
+  fetchRemote: () => Promise<any[]>;
+  upsertRemote: (row: any) => Promise<void>;
+  deleteRemote: (id: string) => Promise<void>;
+}
+
+const adapters: Record<SyncEntityType, EntityAdapter> = {
+  task: {
+    fetchLocalIds: getLocalTaskIds,
+    hasEverSynced: hasTaskEverSynced,
+    markDeletedLocally: markTaskDeletedLocally,
+    markSynced: markTaskSynced,
+    removeLocal: removeLocalTask,
+    upsertLocal: upsertLocalTask,
+    fetchRemote: fetchRemoteTasks,
+    upsertRemote: upsertRemoteTask,
+    deleteRemote: deleteRemoteTask,
+  },
+  event: {
+    fetchLocalIds: getLocalEventIds,
+    hasEverSynced: hasEventEverSynced,
+    markDeletedLocally: markEventDeletedLocally,
+    markSynced: markEventSynced,
+    removeLocal: removeLocalEvent,
+    upsertLocal: upsertLocalEvent,
+    fetchRemote: fetchRemoteEvents,
+    upsertRemote: upsertRemoteEvent,
+    deleteRemote: deleteRemoteEvent,
+  },
+  expense: {
+    fetchLocalIds: getLocalExpenseIds,
+    hasEverSynced: hasExpenseEverSynced,
+    markDeletedLocally: markExpenseDeletedLocally,
+    markSynced: markExpenseSynced,
+    removeLocal: removeLocalExpense,
+    upsertLocal: upsertLocalExpense,
+    fetchRemote: fetchRemoteExpenses,
+    upsertRemote: upsertRemoteExpense,
+    deleteRemote: deleteRemoteExpense,
+  },
+  bill: {
+    fetchLocalIds: getLocalBillIds,
+    hasEverSynced: hasBillEverSynced,
+    markDeletedLocally: markBillDeletedLocally,
+    markSynced: markBillSynced,
+    removeLocal: removeLocalBill,
+    upsertLocal: upsertLocalBill,
+    fetchRemote: fetchRemoteBills,
+    upsertRemote: upsertRemoteBill,
+    deleteRemote: deleteRemoteBill,
+  },
+};
+
+const ALL_ENTITY_TYPES: SyncEntityType[] = ['task', 'event', 'expense', 'bill'];
 
 export async function refreshPendingCount(): Promise<void> {
   const count = await countPending();
@@ -59,23 +144,22 @@ export async function enqueueUpsert(entityType: SyncEntityType, entityId: string
 }
 
 /**
- * Owns the full delete decision so callers (the task/event repos) don't
- * have to know about sync state at all:
+ * Owns the full delete decision so callers (the domain repos) don't have
+ * to know about sync state at all:
  *  - never reached the server -> just remove it locally, nothing to tell
  *    the server, no orphaned soft-deleted row left behind
  *  - already synced -> soft-delete locally (stays hidden immediately) and
  *    queue the remote delete for the engine to replay
  */
 export async function enqueueDelete(entityType: SyncEntityType, entityId: string): Promise<void> {
-  const everSynced = entityType === 'task' ? await hasTaskEverSynced(entityId) : await hasEventEverSynced(entityId);
+  const adapter = adapters[entityType];
+  const everSynced = await adapter.hasEverSynced(entityId);
 
   if (!everSynced) {
     await dequeueForEntity(entityType, entityId);
-    if (entityType === 'task') await removeLocalTask(entityId);
-    else await removeLocalEvent(entityId);
+    await adapter.removeLocal(entityId);
   } else {
-    if (entityType === 'task') await markTaskDeletedLocally(entityId);
-    else await markEventDeletedLocally(entityId);
+    await adapter.markDeletedLocally(entityId);
     await enqueue(entityType, entityId, 'delete', null);
   }
 
@@ -101,23 +185,14 @@ export async function flushQueue(): Promise<void> {
     const entries = await listPending();
 
     for (const entry of entries) {
+      const adapter = adapters[entry.entityType];
       try {
         if (entry.operation === 'upsert' && entry.payload) {
-          if (entry.entityType === 'task') {
-            await upsertRemoteTask(entry.payload as unknown as TaskRow);
-            await markTaskSynced(entry.entityId);
-          } else {
-            await upsertRemoteEvent(entry.payload as unknown as EventRow);
-            await markEventSynced(entry.entityId);
-          }
+          await adapter.upsertRemote(entry.payload);
+          await adapter.markSynced(entry.entityId);
         } else if (entry.operation === 'delete') {
-          if (entry.entityType === 'task') {
-            await deleteRemoteTask(entry.entityId);
-            await removeLocalTask(entry.entityId);
-          } else {
-            await deleteRemoteEvent(entry.entityId);
-            await removeLocalEvent(entry.entityId);
-          }
+          await adapter.deleteRemote(entry.entityId);
+          await adapter.removeLocal(entry.entityId);
         }
 
         await removeEntry(entry.id);
@@ -142,40 +217,28 @@ export async function flushQueue(): Promise<void> {
  * second device - eventually show up here too.
  */
 export async function pullRemoteChanges(userId: string): Promise<void> {
-  const [remoteTasks, remoteEvents, remoteCategories, remoteCalendars] = await Promise.all([
-    fetchRemoteTasks(),
-    fetchRemoteEvents(),
-    fetchRemoteCategories(),
-    fetchRemoteCalendars(),
-  ]);
+  for (const entityType of ALL_ENTITY_TYPES) {
+    const adapter = adapters[entityType];
 
-  const [pendingTaskIds, pendingEventIds, localTaskIds, localEventIds] = await Promise.all([
-    getPendingEntityIds('task'),
-    getPendingEntityIds('event'),
-    getLocalTaskIds(userId),
-    getLocalEventIds(userId),
-  ]);
+    const [remoteRows, pendingIds, localIds] = await Promise.all([
+      adapter.fetchRemote(),
+      getPendingEntityIds(entityType),
+      adapter.fetchLocalIds(userId),
+    ]);
 
-  const remoteTaskIds = new Set(remoteTasks.map((row) => row.id));
-  const remoteEventIds = new Set(remoteEvents.map((row) => row.id));
+    const remoteIds = new Set(remoteRows.map((row) => row.id as string));
 
-  for (const row of remoteTasks) {
-    if (pendingTaskIds.has(row.id)) continue;
-    await upsertLocalTask(row, { markSynced: true });
-  }
-  for (const row of remoteEvents) {
-    if (pendingEventIds.has(row.id)) continue;
-    await upsertLocalEvent(row, { markSynced: true });
+    for (const row of remoteRows) {
+      if (pendingIds.has(row.id)) continue;
+      await adapter.upsertLocal(row, { markSynced: true });
+    }
+
+    for (const id of localIds) {
+      if (!remoteIds.has(id) && !pendingIds.has(id)) await adapter.removeLocal(id);
+    }
   }
 
-  // Prune local rows that no longer exist remotely and aren't awaiting sync themselves.
-  for (const id of localTaskIds) {
-    if (!remoteTaskIds.has(id) && !pendingTaskIds.has(id)) await removeLocalTask(id);
-  }
-  for (const id of localEventIds) {
-    if (!remoteEventIds.has(id) && !pendingEventIds.has(id)) await removeLocalEvent(id);
-  }
-
+  const [remoteCategories, remoteCalendars] = await Promise.all([fetchRemoteCategories(), fetchRemoteCalendars()]);
   await replaceLocalCategories(userId, remoteCategories);
   await replaceLocalCalendars(userId, remoteCalendars);
 }

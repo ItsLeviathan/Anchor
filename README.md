@@ -1,70 +1,53 @@
-# Anchor — Phase 1 + Phase 2 + Phase 3 + Phase 4
+# Anchor — Phases 1–4 + Phase 5 (part 1: Expenses & Bills)
 
-Phases 1–3 are complete. **Phase 4 (Intelligence) is now scaffolded**:
-Brain Dump, AI daily planning, and a deterministic (non-AI) Quick Add
-parser. Read the "Please read before trusting this" section below before
-deploying the AI parts — this phase touches infrastructure (a real
-Supabase Edge Function calling a real AI provider) that could not be
-exercised end-to-end in the environment this was built in.
+Phases 1–4 are complete. **Phase 5 covers Expenses, Bills, Documents,
+Notes, Habits, and Shopping — this update ships Expenses + Bills** (they
+overlap naturally: paying a bill logs an expense). Documents, Notes,
+Habits, and Shopping follow in later updates, same incremental approach
+as every phase so far.
 
 ## What's here
 
-**Phase 1 — Foundation.** Navigation shell, design system, anonymous
-auth, entitlements layer, local persistence.
+**Phases 1–4**: navigation shell, design system, anonymous auth,
+entitlements, local-first tasks/events/categories/calendars with a
+background sync engine, reminders, Brain Dump, daily AI planning, and a
+deterministic Quick Add parser. See prior update notes for details.
 
-**Phase 2 — Tasks, Categories, Calendar, Events, Reminders.** Full task
-CRUD, deterministic prioritization, recurring tasks, month calendar + day
-agenda, events, scheduling-conflict warnings, local notification
-reminders.
+**Phase 5, part 1 — Expenses & Bills (this update)**
 
-**Phase 3 — Offline.** Tasks and events are local-first with a
-background sync engine, a documented last-write-wins conflict rule, and
-a subtle sync status indicator.
-
-**Phase 4 — Intelligence (this update)**
-
-- **Supabase Edge Function** (`supabase/functions/ai-assist/`) — the only
-  place that ever talks to an AI provider. Handles two actions:
-  - `brain_dump`: turns free text into a structured, categorized list of
-    tasks (spec sections 19, 21, 22)
-  - `daily_plan`: a short natural-language focus recommendation, built
-    from *deterministically* fetched tasks/events (never from
-    client-supplied data) — this is the "smart" layer on top of, not a
-    replacement for, Phase 2's deterministic prioritization
-  - Uses Claude (Anthropic's Messages API) with a forced tool call for
-    structured JSON output — no fragile prose parsing
-  - **Quota is enforced server-side**, re-deriving the same entitlement
-    logic the client uses (mirrors `lib/entitlements/`) rather than
-    trusting the client's copy, per the monetization spec
-  - Uses Supabase's current recommended pattern for Edge Functions:
-    `withSupabase` from `@supabase/server`, which handles auth, CORS, and
-    gives you both an RLS-scoped client and a service-role
-    (`supabaseAdmin`) client. `ai_usage` rows are written with the
-    service-role client, since that table's RLS intentionally has no
-    insert policy for regular users
-- **Brain Dump** (`features/brain-dump/`): write freely, tap **Organize
-  this**, review the extracted items grouped by category with everything
-  pre-selected, uncheck anything you don't want, confirm. Nothing is
-  created until you confirm (spec section 22) — the created tasks go
-  through the same local-first `createTask` path as manual task creation,
-  so they're offline-capable too
-- **"Plan my day"** card on Today (`features/ai/DailyPlanCard.tsx`):
-  optional, collapsed until tapped, never auto-loads. If the AI names a
-  single most-important task, that task gets a subtle highlighted border
-  in the list below — it doesn't reorder anything
-- **Deterministic Quick Add parser** (`lib/ai/quickAddParser.ts`, zero
-  AI, zero network): recognizes dates ("tomorrow", "next Friday", "in 3
-  days"), times ("3 PM"), and currency amounts, and picks a type (task /
-  event / bill) accordingly — exactly the spec's own examples ("Buy
-  groceries tomorrow", "Dentist Friday at 3 PM", "Electricity bill
-  ₱1,500 due Monday") pass as written. Wired into the task composer as a
-  tappable "Detected Friday · 3:00 PM — tap to use" suggestion that only
-  appears while no date has been set yet, so it never fights a deliberate
-  manual pick
-- **Honest quota UI** (`components/ai/AiLimitReachedNotice.tsx`): matches
-  the monetization spec's exact free-limit copy. Its "Explore Anchor Pro"
-  option shows the perk list and says plainly that purchasing isn't wired
-  up yet — no dead-end fake upgrade button
+- `expenses` and `bills` tables (spec sections 23–24), both local-first
+  through the same sync engine as tasks/events
+- **The sync engine was refactored** from hardcoded task/event branches
+  into a generic entity-adapter registry
+  (`lib/sync/engine.ts`). Adding expenses and bills was then just:
+  write a local repo + a remote repo (same shape as the existing ones)
+  and register them — `flushQueue`, `pullRemoteChanges`, and
+  `enqueueDelete` didn't need to change at all. This sets up Documents,
+  Notes, Habits, and Shopping to plug in the same way later
+- **A real bug caught and fixed**: PostgREST returns Postgres `numeric`
+  columns as JSON strings, not JS numbers (to preserve precision). The
+  remote fetch functions for expenses/bills now explicitly coerce
+  `amount` to a number — without this, summing expenses would have done
+  string concatenation instead of addition the first time a row came back
+  from a pull
+- **Another real bug caught and fixed, in an existing Phase 1 component**:
+  `components/ui/Input.tsx` spread `{...props}` *after* its internal
+  `style` prop, so any caller passing its own `style` (as the expense
+  composer now does, for a large amount field) would silently wipe out
+  all the built-in border/padding/background styling instead of merging
+  with it. Fixed by destructuring `style` out and merging it into the
+  style array properly - the same pattern `Card` already used correctly
+- **Expense tracking**: income/expense toggle, the 9 fixed categories
+  from spec section 23, date, optional notes. A pure, tested
+  `computeMonthlySummary()` (`lib/expenses/summary.ts`) drives the "This
+  month" card on **Life** — income, expenses, remaining, matching the
+  spec's own mockup exactly
+- **Bills**: name, amount, category, due date, optional recurrence.
+  Marking a bill paid does two things at once: logs the matching expense
+  automatically, and — for recurring bills — spawns the next occurrence
+  the same lazy, one-at-a-time way recurring tasks do (spec section 18)
+- **Life tab is real now** instead of a placeholder: a Money summary
+  card and an upcoming-bills list with tap-to-mark-paid
 
 ## Setup
 
@@ -74,27 +57,17 @@ a subtle sync status indicator.
 npm install
 ```
 
-### 2. Create a Supabase project (if you haven't already)
+### 2–3. Supabase project + env vars
 
-1. Go to [supabase.com](https://supabase.com) → New Project.
-2. Go to **Authentication → Sign In / Providers** and enable **Anonymous
-   Sign-Ins**.
-3. Go to **Settings → API** and copy the **Project URL** and **anon
-   public** key.
-
-### 3. Configure environment variables
-
-```bash
-cp .env.example .env
-```
+Same as previous updates — see earlier README sections if this is a
+fresh setup.
 
 ### 4. Run the database migrations, in order
 
 1. `0001_init.sql`
 2. `0002_tasks.sql`
 3. `0003_calendar.sql`
-
-(No new migration for Phase 4 — it only adds an Edge Function.)
+4. `0004_expenses_bills.sql` ← new this update
 
 ### 5. Deploy the Edge Function
 
@@ -116,52 +89,31 @@ npx expo start
 
 ## Verifying it works
 
-- **Without deploying the Edge Function at all**, Quick Add detection
-  still works: create a task titled "Buy groceries tomorrow" and watch
-  the "Detected Tomorrow — tap to use" suggestion appear
-- Tap **+** → **Brain Dump**, write a few things ("finish the report,
-  buy milk, pay rent Friday"), tap **Organize this** — you should see a
-  categorized, pre-checked list; uncheck one, tap **Add N tasks**, and
-  confirm the right ones landed on Today
-- On Today, tap **Plan my day** — a short plan should appear, and if it
-  names a specific task, that task gets a highlighted border below
-- Use up your monthly AI actions (or lower `free_ai_monthly_limit` in
-  `app_config` to `0` temporarily) and try Brain Dump again — you should
-  see the honest limit-reached card, not a crash or a generic error
-
-## Please read before trusting this with real data
-
-The Edge Function code was written against Supabase's current documented
-conventions (verified by search at build time, since this SDK's
-recommended pattern changed recently — `withSupabase` from
-`@supabase/server` is now preferred over the older manual `Deno.serve` +
-manual CORS/JWT approach) and against Anthropic's Messages API tool-use
-format. **None of it has actually been deployed or run** — there's no
-live Supabase project or Anthropic API key in the environment this was
-built in. Before relying on it:
-
-- Deploy it and send it a real request (`supabase functions serve
-  ai-assist` locally first, then a real deploy) and confirm the response
-  shape actually matches what the client expects
-- Confirm `ctx.userClaims.id` is really where `@supabase/server` puts the
-  user id in your installed version — check `npm:@supabase/server`'s own
-  docs/changelog if this errors, since this is a newer package
-- Confirm the quota check's month-boundary math and the
-  `free_ai_monthly_limit` read behave as expected with real data in
-  `ai_usage`
-- Watch your Anthropic usage/billing dashboard the first few times —
-  nothing here caps *total* spend beyond the per-user monthly action
-  count
+- Tap **+** → **Expense**: log something as an expense, then log
+  something else as income — check **Life**, the "This month" card
+  should reflect both correctly
+- Tap **+** → **Bill** (or **+ Bill** on the Life tab): create a bill
+  with a repeat frequency, e.g. monthly
+- Tap the bill's checkbox to mark it paid — it disappears from "Upcoming
+  bills", and a matching expense (category: whatever the bill's category
+  was, amount matching) should now show up reflected in the money summary
+- Because it was recurring, a new unpaid bill for next month's due date
+  should already be waiting
+- Turn on Airplane Mode and repeat all of the above — same offline-first
+  behavior as tasks/events (instant, no spinners, syncs once you
+  reconnect)
 
 ## What's intentionally not built yet
 
-- Task Breakdown (turning one task into subtasks) — needs a subtasks
-  schema/UI that doesn't exist yet
-- AI weekly review, AI expense categorization, AI document extraction —
-  later AI capabilities from spec section 21, not part of Phase 4's
-  scope (Brain Dump, Quick Add, Daily Planning)
-- Week/day zoomed-in calendar views, calendar-creation UI, subtasks,
-  Notes, Expenses, Bills, Documents, Habits, Shopping, Student Mode — all
-  still ahead (Phase 5+)
-- No paywall UI or actual billing integration — entitlements and quota
-  enforcement are real, but nothing sells anything yet
+- Documents, Notes, Habits, Shopping — the rest of Phase 5
+- Expense/bill editing (only create/delete exist so far, no update flow)
+- Spending trends and category breakdown charts (spec section 23's
+  "trends" — `computeCategoryTotals()` already exists as a pure function
+  for this, just not wired into any chart UI yet; that's Insights/Phase
+  9-adjacent territory)
+- Bill reminders (local notifications) — tasks and events have them
+  (Phase 2), bills don't yet
+- Document expiration notifications, AI expense categorization, AI
+  document extraction — later AI capabilities from spec section 21
+- No paywall UI or actual billing integration — entitlements and AI
+  quota enforcement are real, but nothing sells anything yet

@@ -59,9 +59,17 @@ export function AddSheet() {
       return;
     }
 
-    // Every other type arrives in a later phase (Reminder alongside
-    // notifications, Expense/Bill/Document/Habit/Shopping in Phase 5).
-    // For now, just close.
+    if (key === 'expense') {
+      router.replace('/expense-new');
+      return;
+    }
+
+    if (key === 'bill') {
+      router.replace('/bill-new');
+      return;
+    }
+
+    // Habit/Shopping/Document creation arrive in a later Phase 5 update.
     router.back();
   }
 
