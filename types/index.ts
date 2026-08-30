@@ -100,6 +100,7 @@ export interface ShoppingList {
   createdAt: string;
   updatedAt: string;
 }
+
 export type MoneyCategory =
   | 'Food'
   | 'Transportation'
@@ -110,6 +111,26 @@ export type MoneyCategory =
   | 'Health'
   | 'Personal'
   | 'Other';
+
+export type DocumentCategory = 'ID' | 'School' | 'Certificate' | 'Contract' | 'Other';
+
+export interface AnchorDocument {
+  id: string;
+  userId: string;
+  name: string;
+  category: DocumentCategory;
+  storagePath: string;
+  fileName: string;
+  mimeType: string | null;
+  fileSize: number | null;
+  /** 'YYYY-MM-DD' */
+  issueDate: string | null;
+  /** 'YYYY-MM-DD' */
+  expirationDate: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export type ExpenseType = 'income' | 'expense';
 

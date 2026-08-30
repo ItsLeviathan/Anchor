@@ -84,8 +84,11 @@ export function AddSheet() {
       return;
     }
 
-    // Document creation needs Supabase Storage (file upload) and is a
-    // later Phase 5 update.
+    if (key === 'document') {
+      router.replace('/document-new');
+      return;
+    }
+
     router.back();
   }
 

@@ -231,7 +231,7 @@ export async function getCachedProfile(id: string): Promise<CachedProfile | null
  * entity type so tasks and events can't collide.
  */
 export async function setScheduledNotificationId(
-  entityType: 'task' | 'event',
+  entityType: 'task' | 'event' | 'document',
   entityId: string,
   notificationId: string
 ): Promise<void> {
@@ -245,7 +245,7 @@ export async function setScheduledNotificationId(
 }
 
 export async function getScheduledNotificationId(
-  entityType: 'task' | 'event',
+  entityType: 'task' | 'event' | 'document',
   entityId: string
 ): Promise<string | null> {
   const db = await getDb();
@@ -256,7 +256,7 @@ export async function getScheduledNotificationId(
   return row?.notification_id ?? null;
 }
 
-export async function clearScheduledNotificationId(entityType: 'task' | 'event', entityId: string): Promise<void> {
+export async function clearScheduledNotificationId(entityType: 'task' | 'event' | 'document', entityId: string): Promise<void> {
   const db = await getDb();
   await db.runAsync(`DELETE FROM scheduled_notifications WHERE entity_type = ? AND entity_id = ?;`, [
     entityType,

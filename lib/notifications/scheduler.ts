@@ -5,13 +5,16 @@ import {
   getScheduledNotificationId,
   setScheduledNotificationId,
 } from '../database/db';
-import type { CalendarEvent, Task } from '../../types';
+import type { AnchorDocument, CalendarEvent, Task } from '../../types';
 import { areRemindersEnabled } from './preferences';
 import { ensureNotificationSetup } from './setup';
 
 const EVENT_REMINDER_LEAD_MINUTES = 15;
 /** Date-only tasks (no due time) get a single morning reminder. */
 const DEFAULT_TASK_REMINDER_TIME = '09:00';
+/** Matches spec section 25's own example: "Driver's license expires in 14 days." */
+const DOCUMENT_EXPIRATION_LEAD_DAYS = 14;
+const DOCUMENT_REMINDER_TIME = '09:00';
 
 function computeTaskTriggerDate(task: Pick<Task, 'dueDate' | 'dueTime'>): Date | null {
   if (!task.dueDate) return null;
@@ -80,4 +83,36 @@ export async function cancelEventReminder(eventId: string): Promise<void> {
 
   await Notifications.cancelScheduledNotificationAsync(notificationId);
   await clearScheduledNotificationId('event', eventId);
+}
+
+export async function scheduleDocumentExpirationReminder(document: AnchorDocument): Promise<void> {
+  await cancelDocumentExpirationReminder(document.id);
+
+  if (!document.expirationDate) return;
+  if (!(await areRemindersEnabled())) return;
+
+  const triggerDate = new Date(`${document.expirationDate}T${DOCUMENT_REMINDER_TIME}`);
+  triggerDate.setDate(triggerDate.getDate() - DOCUMENT_EXPIRATION_LEAD_DAYS);
+  if (triggerDate.getTime() <= Date.now()) return;
+
+  const permitted = await ensureNotificationSetup();
+  if (!permitted) return;
+
+  const notificationId = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: document.name,
+      body: `Expires in ${DOCUMENT_EXPIRATION_LEAD_DAYS} days`,
+    },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
+  });
+
+  await setScheduledNotificationId('document', document.id, notificationId);
+}
+
+export async function cancelDocumentExpirationReminder(documentId: string): Promise<void> {
+  const notificationId = await getScheduledNotificationId('document', documentId);
+  if (!notificationId) return;
+
+  await Notifications.cancelScheduledNotificationAsync(notificationId);
+  await clearScheduledNotificationId('document', documentId);
 }

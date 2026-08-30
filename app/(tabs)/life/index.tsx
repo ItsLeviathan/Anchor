@@ -4,11 +4,13 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BillListItem } from '../../../components/bills/BillListItem';
+import { DocumentListItem } from '../../../components/documents/DocumentListItem';
 import { HabitListItem } from '../../../components/habits/HabitListItem';
 import { NoteListItem } from '../../../components/notes/NoteListItem';
 import { ShoppingItemRow } from '../../../components/shopping/ShoppingItemRow';
 import { Card, EmptyState } from '../../../components/ui';
 import { useBills, useDeleteBill, useMarkBillPaid } from '../../../features/bills/useBills';
+import { useDeleteDocument, useDocuments } from '../../../features/documents/useDocuments';
 import { useExpenses } from '../../../features/expenses/useExpenses';
 import { useDeleteHabit, useHabits, useToggleHabitToday } from '../../../features/habits/useHabits';
 import { useDeleteNote, useNotes, useToggleNotePinned } from '../../../features/notes/useNotes';
@@ -77,6 +79,9 @@ export default function LifeScreen() {
   const removeShoppingItem = useRemoveShoppingItem(userId);
   const clearCompleted = useClearCompletedItems(userId);
 
+  const { data: documents = [], isLoading: isDocumentsLoading } = useDocuments(userId);
+  const deleteDocument = useDeleteDocument(userId);
+
   const summary = useMemo(() => computeMonthlySummary(expenses), [expenses]);
   const upcomingBills = useMemo(
     () => bills.filter((bill) => bill.status === 'unpaid').sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
@@ -86,7 +91,13 @@ export default function LifeScreen() {
   const completedShoppingItems = shoppingList?.items.filter((item) => item.isCompleted) ?? [];
 
   const isLoading =
-    isSessionLoading || isExpensesLoading || isBillsLoading || isNotesLoading || isHabitsLoading || isShoppingLoading;
+    isSessionLoading ||
+    isExpensesLoading ||
+    isBillsLoading ||
+    isNotesLoading ||
+    isHabitsLoading ||
+    isShoppingLoading ||
+    isDocumentsLoading;
   const currency = expenses[0]?.currency ?? bills[0]?.currency ?? 'PHP';
 
   return (
@@ -216,7 +227,7 @@ export default function LifeScreen() {
           {notes.length === 0 ? (
             <EmptyState message="Your notes will live here." />
           ) : (
-            <View style={{ gap: spacing.xs }}>
+            <View style={{ gap: spacing.xs, marginBottom: spacing.lg }}>
               {notes.map((note) => (
                 <NoteListItem
                   key={note.id}
@@ -224,6 +235,18 @@ export default function LifeScreen() {
                   onTogglePin={(n) => togglePinned.mutate(n)}
                   onDelete={(n) => deleteNote.mutate(n.id)}
                 />
+              ))}
+            </View>
+          )}
+
+          {/* ---------- Documents ---------- */}
+          <SectionHeader title="Documents" actionLabel="+ Document" onAction={() => router.push('/document-new')} />
+          {documents.length === 0 ? (
+            <EmptyState message="Your important documents will live here." />
+          ) : (
+            <View style={{ gap: spacing.xs }}>
+              {documents.map((document) => (
+                <DocumentListItem key={document.id} document={document} onDelete={(d) => deleteDocument.mutate(d)} />
               ))}
             </View>
           )}
