@@ -1,53 +1,47 @@
-# Anchor — Phases 1–4 + Phase 5 (part 1: Expenses & Bills)
+# Anchor — Phases 1–4 + Phase 5 (Expenses, Bills, Notes, Habits, Shopping)
 
-Phases 1–4 are complete. **Phase 5 covers Expenses, Bills, Documents,
-Notes, Habits, and Shopping — this update ships Expenses + Bills** (they
-overlap naturally: paying a bill logs an expense). Documents, Notes,
-Habits, and Shopping follow in later updates, same incremental approach
-as every phase so far.
+Phases 1–4 are complete. **Phase 5 is now done except for Documents**,
+which needs Supabase Storage (file upload) — a genuinely different
+technical surface from everything else built so far, and one I want to
+treat carefully with its own update rather than rush in alongside
+everything else.
 
 ## What's here
 
 **Phases 1–4**: navigation shell, design system, anonymous auth,
 entitlements, local-first tasks/events/categories/calendars with a
 background sync engine, reminders, Brain Dump, daily AI planning, and a
-deterministic Quick Add parser. See prior update notes for details.
+deterministic Quick Add parser.
 
-**Phase 5, part 1 — Expenses & Bills (this update)**
+**Phase 5 — Expenses & Bills**: income/expense tracking with a real
+monthly summary, bills with optional recurrence, paying a bill logs the
+matching expense and spawns the next occurrence automatically.
 
-- `expenses` and `bills` tables (spec sections 23–24), both local-first
-  through the same sync engine as tasks/events
-- **The sync engine was refactored** from hardcoded task/event branches
-  into a generic entity-adapter registry
-  (`lib/sync/engine.ts`). Adding expenses and bills was then just:
-  write a local repo + a remote repo (same shape as the existing ones)
-  and register them — `flushQueue`, `pullRemoteChanges`, and
-  `enqueueDelete` didn't need to change at all. This sets up Documents,
-  Notes, Habits, and Shopping to plug in the same way later
-- **A real bug caught and fixed**: PostgREST returns Postgres `numeric`
-  columns as JSON strings, not JS numbers (to preserve precision). The
-  remote fetch functions for expenses/bills now explicitly coerce
-  `amount` to a number — without this, summing expenses would have done
-  string concatenation instead of addition the first time a row came back
-  from a pull
-- **Another real bug caught and fixed, in an existing Phase 1 component**:
-  `components/ui/Input.tsx` spread `{...props}` *after* its internal
-  `style` prop, so any caller passing its own `style` (as the expense
-  composer now does, for a large amount field) would silently wipe out
-  all the built-in border/padding/background styling instead of merging
-  with it. Fixed by destructuring `style` out and merging it into the
-  style array properly - the same pattern `Card` already used correctly
-- **Expense tracking**: income/expense toggle, the 9 fixed categories
-  from spec section 23, date, optional notes. A pure, tested
-  `computeMonthlySummary()` (`lib/expenses/summary.ts`) drives the "This
-  month" card on **Life** — income, expenses, remaining, matching the
-  spec's own mockup exactly
-- **Bills**: name, amount, category, due date, optional recurrence.
-  Marking a bill paid does two things at once: logs the matching expense
-  automatically, and — for recurring bills — spawns the next occurrence
-  the same lazy, one-at-a-time way recurring tasks do (spec section 18)
-- **Life tab is real now** instead of a placeholder: a Money summary
-  card and an upcoming-bills list with tap-to-mark-paid
+**Phase 5 — Notes, Habits & Shopping (this update)**
+
+- **Notes**: title (optional), content, comma-separated tags, pin
+  toggle. Pinned notes sort first
+- **Habits**: daily or specific-weekday frequency, tap-to-complete for
+  today, streak calculation (`lib/habits/streak.ts`, pure and tested) —
+  a streak isn't considered "broken" just because today hasn't happened
+  yet, and a zero/reset streak reads as "Start today," never anything
+  shame-y, per spec section 27. Due-today habits also show on **Today**,
+  not just **Life**
+- **Shopping**: one auto-seeded default list per user (same simplified
+  pattern as the default calendar) with quick add-item, tap-to-check-off,
+  and a "Clear" action for checked-off items
+- **Sync engine extended again**, same adapter pattern from the
+  Expenses/Bills update — three more entity types (`note`, `habit`,
+  `shopping_list`) registered, zero changes needed to `flushQueue` /
+  `pullRemoteChanges` / `enqueueDelete` themselves
+- **Two deliberate simplifications, documented in the migration file**:
+  a habit's completion history and a shopping list's items are stored as
+  JSON arrays directly on their own row, rather than separate join
+  tables. This keeps both as a single sync entity (one queue entry per
+  edit) instead of two. Worth revisiting if either needs richer
+  per-entry data later
+- **Life tab** now has four sections: Money, Habits, Shopping, Notes —
+  each with its own quick-add link
 
 ## Setup
 
@@ -59,15 +53,15 @@ npm install
 
 ### 2–3. Supabase project + env vars
 
-Same as previous updates — see earlier README sections if this is a
-fresh setup.
+Same as previous updates.
 
 ### 4. Run the database migrations, in order
 
 1. `0001_init.sql`
 2. `0002_tasks.sql`
 3. `0003_calendar.sql`
-4. `0004_expenses_bills.sql` ← new this update
+4. `0004_expenses_bills.sql`
+5. `0005_notes_habits_shopping.sql` ← new this update
 
 ### 5. Deploy the Edge Function
 
@@ -89,31 +83,31 @@ npx expo start
 
 ## Verifying it works
 
-- Tap **+** → **Expense**: log something as an expense, then log
-  something else as income — check **Life**, the "This month" card
-  should reflect both correctly
-- Tap **+** → **Bill** (or **+ Bill** on the Life tab): create a bill
-  with a repeat frequency, e.g. monthly
-- Tap the bill's checkbox to mark it paid — it disappears from "Upcoming
-  bills", and a matching expense (category: whatever the bill's category
-  was, amount matching) should now show up reflected in the money summary
-- Because it was recurring, a new unpaid bill for next month's due date
-  should already be waiting
+- Tap **+** → **Note**, save one with a couple of tags — it shows up
+  under Notes on Life; tap the bookmark icon to pin it, it should jump
+  to the top
+- Tap **+** → **Habit**, create a daily one — it shows up on both
+  **Today** (in a HABITS section) and **Life**; tap it a few days in a
+  row (or manually adjust dates in Supabase to test the streak math) and
+  confirm the streak count is right
+- Tap **+** → **Shopping item** a few times — items land in the one
+  default list, shown on Life; check a couple off, confirm "Clear"
+  removes only the checked ones
 - Turn on Airplane Mode and repeat all of the above — same offline-first
-  behavior as tasks/events (instant, no spinners, syncs once you
-  reconnect)
+  behavior as everything else: instant, no spinners, syncs on reconnect
 
 ## What's intentionally not built yet
 
-- Documents, Notes, Habits, Shopping — the rest of Phase 5
-- Expense/bill editing (only create/delete exist so far, no update flow)
-- Spending trends and category breakdown charts (spec section 23's
-  "trends" — `computeCategoryTotals()` already exists as a pure function
-  for this, just not wired into any chart UI yet; that's Insights/Phase
-  9-adjacent territory)
-- Bill reminders (local notifications) — tasks and events have them
-  (Phase 2), bills don't yet
-- Document expiration notifications, AI expense categorization, AI
-  document extraction — later AI capabilities from spec section 21
+- **Documents** — the last piece of Phase 5, deferred because it needs
+  Supabase Storage (private buckets, signed URLs, a file picker) rather
+  than just another Postgres table, and deserves its own careful pass
+- Note editing (only create/pin/delete exist), note attachments, note AI
+  actions (summarize/extract tasks — spec section 26, not part of Phase
+  5's own scope per section 51)
+- Multiple shopping lists (schema already supports it; no UI for
+  managing more than the one auto-seeded list yet)
+- Habit category assignment, habit archiving, consistency trend charts
+  (spec section 27's "trends" — not built, Insights is later territory)
+- Bill/expense editing, spending trend charts
 - No paywall UI or actual billing integration — entitlements and AI
   quota enforcement are real, but nothing sells anything yet

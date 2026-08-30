@@ -36,6 +36,9 @@ export default function RootLayout() {
             <Stack.Screen name="brain-dump" options={{ presentation: 'modal' }} />
             <Stack.Screen name="expense-new" options={{ presentation: 'modal' }} />
             <Stack.Screen name="bill-new" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="note-new" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="habit-new" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="shopping-item-new" options={{ presentation: 'modal' }} />
           </Stack>
         </AppProviders>
       </SafeAreaProvider>

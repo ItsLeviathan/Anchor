@@ -32,6 +32,30 @@ import {
   removeLocalBill,
   upsertLocalBill,
 } from '../database/localBills';
+import {
+  getLocalNoteIds,
+  hasNoteEverSynced,
+  markNoteDeletedLocally,
+  markNoteSynced,
+  removeLocalNote,
+  upsertLocalNote,
+} from '../database/localNotes';
+import {
+  getLocalHabitIds,
+  hasHabitEverSynced,
+  markHabitDeletedLocally,
+  markHabitSynced,
+  removeLocalHabit,
+  upsertLocalHabit,
+} from '../database/localHabits';
+import {
+  getLocalShoppingListIds,
+  hasShoppingListEverSynced,
+  markShoppingListDeletedLocally,
+  markShoppingListSynced,
+  removeLocalShoppingList,
+  upsertLocalShoppingList,
+} from '../database/localShoppingLists';
 import { useSyncStore } from '../../store/useSyncStore';
 import {
   countPending,
@@ -49,6 +73,9 @@ import { deleteRemoteEvent, fetchRemoteEvents, upsertRemoteEvent } from './remot
 import { deleteRemoteTask, fetchRemoteTasks, upsertRemoteTask } from './remoteTasks';
 import { deleteRemoteExpense, fetchRemoteExpenses, upsertRemoteExpense } from './remoteExpenses';
 import { deleteRemoteBill, fetchRemoteBills, upsertRemoteBill } from './remoteBills';
+import { deleteRemoteNote, fetchRemoteNotes, upsertRemoteNote } from './remoteNotes';
+import { deleteRemoteHabit, fetchRemoteHabits, upsertRemoteHabit } from './remoteHabits';
+import { deleteRemoteShoppingList, fetchRemoteShoppingLists, upsertRemoteShoppingList } from './remoteShoppingLists';
 
 /**
  * Conflict resolution rule (spec section 38 requires one to be defined):
@@ -127,9 +154,42 @@ const adapters: Record<SyncEntityType, EntityAdapter> = {
     upsertRemote: upsertRemoteBill,
     deleteRemote: deleteRemoteBill,
   },
+  note: {
+    fetchLocalIds: getLocalNoteIds,
+    hasEverSynced: hasNoteEverSynced,
+    markDeletedLocally: markNoteDeletedLocally,
+    markSynced: markNoteSynced,
+    removeLocal: removeLocalNote,
+    upsertLocal: upsertLocalNote,
+    fetchRemote: fetchRemoteNotes,
+    upsertRemote: upsertRemoteNote,
+    deleteRemote: deleteRemoteNote,
+  },
+  habit: {
+    fetchLocalIds: getLocalHabitIds,
+    hasEverSynced: hasHabitEverSynced,
+    markDeletedLocally: markHabitDeletedLocally,
+    markSynced: markHabitSynced,
+    removeLocal: removeLocalHabit,
+    upsertLocal: upsertLocalHabit,
+    fetchRemote: fetchRemoteHabits,
+    upsertRemote: upsertRemoteHabit,
+    deleteRemote: deleteRemoteHabit,
+  },
+  shopping_list: {
+    fetchLocalIds: getLocalShoppingListIds,
+    hasEverSynced: hasShoppingListEverSynced,
+    markDeletedLocally: markShoppingListDeletedLocally,
+    markSynced: markShoppingListSynced,
+    removeLocal: removeLocalShoppingList,
+    upsertLocal: upsertLocalShoppingList,
+    fetchRemote: fetchRemoteShoppingLists,
+    upsertRemote: upsertRemoteShoppingList,
+    deleteRemote: deleteRemoteShoppingList,
+  },
 };
 
-const ALL_ENTITY_TYPES: SyncEntityType[] = ['task', 'event', 'expense', 'bill'];
+const ALL_ENTITY_TYPES: SyncEntityType[] = ['task', 'event', 'expense', 'bill', 'note', 'habit', 'shopping_list'];
 
 export async function refreshPendingCount(): Promise<void> {
   const count = await countPending();

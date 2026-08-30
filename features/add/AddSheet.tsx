@@ -69,7 +69,23 @@ export function AddSheet() {
       return;
     }
 
-    // Habit/Shopping/Document creation arrive in a later Phase 5 update.
+    if (key === 'note') {
+      router.replace('/note-new');
+      return;
+    }
+
+    if (key === 'habit') {
+      router.replace('/habit-new');
+      return;
+    }
+
+    if (key === 'shopping') {
+      router.replace('/shopping-item-new');
+      return;
+    }
+
+    // Document creation needs Supabase Storage (file upload) and is a
+    // later Phase 5 update.
     router.back();
   }
 

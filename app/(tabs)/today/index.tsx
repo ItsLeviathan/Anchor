@@ -3,11 +3,14 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategorySummaryRow } from '../../../components/categories/CategorySummaryRow';
+import { HabitListItem } from '../../../components/habits/HabitListItem';
 import { TaskRow } from '../../../components/tasks/TaskRow';
 import { EmptyState, SyncStatusBadge } from '../../../components/ui';
 import { DailyPlanCard } from '../../../features/ai/DailyPlanCard';
 import { useCategories } from '../../../features/categories/useCategories';
+import { useHabits, useToggleHabitToday } from '../../../features/habits/useHabits';
 import { useCompleteTask, useDeleteTask, useReopenTask, useTasks } from '../../../features/tasks/useTasks';
+import { isDueToday } from '../../../lib/habits/streak';
 import { useSession } from '../../../lib/supabase/useSession';
 import { selectTodayTasks } from '../../../lib/tasks/prioritization';
 import { useTheme } from '../../../lib/theme/ThemeProvider';
@@ -29,11 +32,14 @@ export default function TodayScreen() {
 
   const { data: tasks = [], isLoading: isTasksLoading } = useTasks(userId);
   const { data: categories = [] } = useCategories(userId);
+  const { data: habits = [], isLoading: isHabitsLoading } = useHabits(userId);
   const completeTask = useCompleteTask(userId);
   const reopenTask = useReopenTask(userId);
   const deleteTask = useDeleteTask(userId);
+  const toggleHabitToday = useToggleHabitToday(userId);
 
   const todayTasks = useMemo(() => selectTodayTasks(tasks), [tasks]);
+  const dueHabits = useMemo(() => habits.filter((habit) => isDueToday(habit)), [habits]);
   const [focusTaskId, setFocusTaskId] = useState<string | null>(null);
 
   const categoryById = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories]);
@@ -61,7 +67,7 @@ export default function TodayScreen() {
     deleteTask.mutate(task.id);
   }
 
-  const isLoading = isSessionLoading || isTasksLoading;
+  const isLoading = isSessionLoading || isTasksLoading || isHabitsLoading;
 
   return (
     <ScrollView
@@ -115,6 +121,19 @@ export default function TodayScreen() {
           ) : (
             <EmptyState message="Nothing demanding your attention yet." />
           )}
+
+          {dueHabits.length > 0 ? (
+            <View style={{ marginBottom: spacing.xl }}>
+              <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.xs }]}>
+                HABITS
+              </Text>
+              <View style={{ gap: spacing.xs }}>
+                {dueHabits.map((habit) => (
+                  <HabitListItem key={habit.id} habit={habit} onToggleToday={(h) => toggleHabitToday.mutate(h)} />
+                ))}
+              </View>
+            </View>
+          ) : null}
 
           {categoriesWithItems.length > 0 ? (
             <View>

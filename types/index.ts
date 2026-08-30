@@ -54,6 +54,52 @@ export interface Calendar {
   isDefault: boolean;
 }
 
+export interface Note {
+  id: string;
+  userId: string;
+  categoryId: string | null;
+  title: string | null;
+  content: string;
+  tags: string[];
+  isPinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type HabitFrequency = 'daily' | 'weekly';
+
+export interface Habit {
+  id: string;
+  userId: string;
+  categoryId: string | null;
+  name: string;
+  frequency: HabitFrequency;
+  /** 0=Sun..6=Sat; null means any day counts (only meaningful for 'weekly') */
+  daysOfWeek: number[] | null;
+  /** 'YYYY-MM-DD' strings - see the schema migration's note on this simplification */
+  completedDates: string[];
+  archived: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  quantity: string | null;
+  estimatedCost: number | null;
+  isCompleted: boolean;
+  store: string | null;
+}
+
+export interface ShoppingList {
+  id: string;
+  userId: string;
+  name: string;
+  items: ShoppingItem[];
+  createdAt: string;
+  updatedAt: string;
+}
 export type MoneyCategory =
   | 'Food'
   | 'Transportation'

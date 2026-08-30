@@ -118,6 +118,44 @@ export async function initDatabase(): Promise<void> {
       deleted INTEGER NOT NULL DEFAULT 0,
       synced_at TEXT
     );
+    -- Phase 5 part 2: notes, habits, shopping lists.
+    CREATE TABLE IF NOT EXISTS local_notes (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      category_id TEXT,
+      title TEXT,
+      content TEXT NOT NULL,
+      tags TEXT NOT NULL DEFAULT '[]',
+      is_pinned INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted INTEGER NOT NULL DEFAULT 0,
+      synced_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS local_habits (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      category_id TEXT,
+      name TEXT NOT NULL,
+      frequency TEXT NOT NULL,
+      days_of_week TEXT,
+      completed_dates TEXT NOT NULL DEFAULT '[]',
+      archived INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted INTEGER NOT NULL DEFAULT 0,
+      synced_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS local_shopping_lists (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      items TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted INTEGER NOT NULL DEFAULT 0,
+      synced_at TEXT
+    );
     -- Read-only local mirrors (no queue entries - see lib/sync/engine.ts)
     -- so category/calendar pickers still work while offline.
     CREATE TABLE IF NOT EXISTS local_categories (
