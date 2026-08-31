@@ -8,7 +8,9 @@ import { DocumentListItem } from '../../../components/documents/DocumentListItem
 import { HabitListItem } from '../../../components/habits/HabitListItem';
 import { NoteListItem } from '../../../components/notes/NoteListItem';
 import { ShoppingItemRow } from '../../../components/shopping/ShoppingItemRow';
+import { SubjectCard } from '../../../components/subjects/SubjectCard';
 import { Card, EmptyState } from '../../../components/ui';
+import { useAssignments, useDeleteAssignment, useToggleAssignmentStatus } from '../../../features/assignments/useAssignments';
 import { useBills, useDeleteBill, useMarkBillPaid } from '../../../features/bills/useBills';
 import { useDeleteDocument, useDocuments } from '../../../features/documents/useDocuments';
 import { useExpenses } from '../../../features/expenses/useExpenses';
@@ -20,6 +22,8 @@ import {
   useShoppingList,
   useToggleShoppingItem,
 } from '../../../features/shopping/useShoppingList';
+import { useDeleteSubject, useSubjects } from '../../../features/subjects/useSubjects';
+import { useStudentMode } from '../../../features/studentMode/useStudentMode';
 import { computeMonthlySummary } from '../../../lib/expenses/summary';
 import { useSession } from '../../../lib/supabase/useSession';
 import { useTheme } from '../../../lib/theme/ThemeProvider';
@@ -82,6 +86,13 @@ export default function LifeScreen() {
   const { data: documents = [], isLoading: isDocumentsLoading } = useDocuments(userId);
   const deleteDocument = useDeleteDocument(userId);
 
+  const { data: studentModeOn = false, isLoading: isStudentModeLoading } = useStudentMode(userId);
+  const { data: subjects = [], isLoading: isSubjectsLoading } = useSubjects(studentModeOn ? userId : undefined);
+  const { data: assignments = [] } = useAssignments(studentModeOn ? userId : undefined);
+  const deleteSubject = useDeleteSubject(userId);
+  const toggleAssignmentStatus = useToggleAssignmentStatus(userId);
+  const deleteAssignment = useDeleteAssignment(userId);
+
   const summary = useMemo(() => computeMonthlySummary(expenses), [expenses]);
   const upcomingBills = useMemo(
     () => bills.filter((bill) => bill.status === 'unpaid').sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
@@ -97,7 +108,9 @@ export default function LifeScreen() {
     isNotesLoading ||
     isHabitsLoading ||
     isShoppingLoading ||
-    isDocumentsLoading;
+    isDocumentsLoading ||
+    isStudentModeLoading ||
+    (studentModeOn && isSubjectsLoading);
   const currency = expenses[0]?.currency ?? bills[0]?.currency ?? 'PHP';
 
   return (
@@ -244,12 +257,35 @@ export default function LifeScreen() {
           {documents.length === 0 ? (
             <EmptyState message="Your important documents will live here." />
           ) : (
-            <View style={{ gap: spacing.xs }}>
+            <View style={{ gap: spacing.xs, marginBottom: studentModeOn ? spacing.lg : 0 }}>
               {documents.map((document) => (
                 <DocumentListItem key={document.id} document={document} onDelete={(d) => deleteDocument.mutate(d)} />
               ))}
             </View>
           )}
+
+          {/* ---------- Student ---------- */}
+          {studentModeOn ? (
+            <>
+              <SectionHeader title="Student" actionLabel="+ Subject" onAction={() => router.push('/subject-new')} />
+              {subjects.length === 0 ? (
+                <EmptyState message="Add a subject to start tracking assignments and exams." />
+              ) : (
+                <View>
+                  {subjects.map((subject) => (
+                    <SubjectCard
+                      key={subject.id}
+                      subject={subject}
+                      items={assignments.filter((item) => item.subjectId === subject.id)}
+                      onToggleItem={(item) => toggleAssignmentStatus.mutate(item)}
+                      onDeleteItem={(item) => deleteAssignment.mutate(item.id)}
+                      onDeleteSubject={(s) => deleteSubject.mutate(s.id)}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
+          ) : null}
         </>
       )}
     </ScrollView>

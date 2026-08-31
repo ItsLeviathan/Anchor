@@ -56,6 +56,22 @@ import {
   removeLocalShoppingList,
   upsertLocalShoppingList,
 } from '../database/localShoppingLists';
+import {
+  getLocalSubjectIds,
+  hasSubjectEverSynced,
+  markSubjectDeletedLocally,
+  markSubjectSynced,
+  removeLocalSubject,
+  upsertLocalSubject,
+} from '../database/localSubjects';
+import {
+  getLocalAssignmentIds,
+  hasAssignmentEverSynced,
+  markAssignmentDeletedLocally,
+  markAssignmentSynced,
+  removeLocalAssignment,
+  upsertLocalAssignment,
+} from '../database/localAssignments';
 import { useSyncStore } from '../../store/useSyncStore';
 import {
   countPending,
@@ -76,6 +92,8 @@ import { deleteRemoteBill, fetchRemoteBills, upsertRemoteBill } from './remoteBi
 import { deleteRemoteNote, fetchRemoteNotes, upsertRemoteNote } from './remoteNotes';
 import { deleteRemoteHabit, fetchRemoteHabits, upsertRemoteHabit } from './remoteHabits';
 import { deleteRemoteShoppingList, fetchRemoteShoppingLists, upsertRemoteShoppingList } from './remoteShoppingLists';
+import { deleteRemoteSubject, fetchRemoteSubjects, upsertRemoteSubject } from './remoteSubjects';
+import { deleteRemoteAssignment, fetchRemoteAssignments, upsertRemoteAssignment } from './remoteAssignments';
 
 /**
  * Conflict resolution rule (spec section 38 requires one to be defined):
@@ -187,9 +205,41 @@ const adapters: Record<SyncEntityType, EntityAdapter> = {
     upsertRemote: upsertRemoteShoppingList,
     deleteRemote: deleteRemoteShoppingList,
   },
+  subject: {
+    fetchLocalIds: getLocalSubjectIds,
+    hasEverSynced: hasSubjectEverSynced,
+    markDeletedLocally: markSubjectDeletedLocally,
+    markSynced: markSubjectSynced,
+    removeLocal: removeLocalSubject,
+    upsertLocal: upsertLocalSubject,
+    fetchRemote: fetchRemoteSubjects,
+    upsertRemote: upsertRemoteSubject,
+    deleteRemote: deleteRemoteSubject,
+  },
+  assignment: {
+    fetchLocalIds: getLocalAssignmentIds,
+    hasEverSynced: hasAssignmentEverSynced,
+    markDeletedLocally: markAssignmentDeletedLocally,
+    markSynced: markAssignmentSynced,
+    removeLocal: removeLocalAssignment,
+    upsertLocal: upsertLocalAssignment,
+    fetchRemote: fetchRemoteAssignments,
+    upsertRemote: upsertRemoteAssignment,
+    deleteRemote: deleteRemoteAssignment,
+  },
 };
 
-const ALL_ENTITY_TYPES: SyncEntityType[] = ['task', 'event', 'expense', 'bill', 'note', 'habit', 'shopping_list'];
+const ALL_ENTITY_TYPES: SyncEntityType[] = [
+  'task',
+  'event',
+  'expense',
+  'bill',
+  'note',
+  'habit',
+  'shopping_list',
+  'subject',
+  'assignment',
+];
 
 export async function refreshPendingCount(): Promise<void> {
   const count = await countPending();

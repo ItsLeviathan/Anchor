@@ -8,12 +8,15 @@ import { useEntitlements } from '../../../lib/entitlements/useEntitlements';
 import { areRemindersEnabled, setRemindersEnabled } from '../../../lib/notifications/preferences';
 import { useSession } from '../../../lib/supabase/useSession';
 import { useTheme } from '../../../lib/theme/ThemeProvider';
+import { useSetStudentMode, useStudentMode } from '../../../features/studentMode/useStudentMode';
 
 export default function ProfileScreen() {
   const { colors, spacing, typography, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const { session, isLoading: isSessionLoading } = useSession();
   const { entitlements, isLoading: isEntitlementsLoading } = useEntitlements(session?.user.id);
+  const { data: studentModeOn = false, isLoading: isStudentModeLoading } = useStudentMode(session?.user.id);
+  const setStudentMode = useSetStudentMode(session?.user.id);
   const [cached, setCached] = useState<CachedProfile | null>(null);
   const [remindersOn, setRemindersOn] = useState(true);
 
@@ -47,7 +50,7 @@ export default function ProfileScreen() {
       .catch((err) => console.error('Local profile cache failed', err));
   }, [session]);
 
-  const isLoading = isSessionLoading || isEntitlementsLoading;
+  const isLoading = isSessionLoading || isEntitlementsLoading || isStudentModeLoading;
 
   return (
     <ScrollView
@@ -106,6 +109,22 @@ export default function ProfileScreen() {
               <Switch
                 value={remindersOn}
                 onValueChange={handleToggleReminders}
+                trackColor={{ true: colors.accent, false: colors.border }}
+              />
+            </View>
+          </Card>
+
+          <Card style={{ marginTop: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, marginRight: spacing.md }}>
+                <Text style={[typography.headline, { color: colors.textPrimary }]}>Student Mode</Text>
+                <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
+                  Track subjects, assignments, and exams on the Life tab
+                </Text>
+              </View>
+              <Switch
+                value={studentModeOn}
+                onValueChange={(value) => setStudentMode.mutate(value)}
                 trackColor={{ true: colors.accent, false: colors.border }}
               />
             </View>

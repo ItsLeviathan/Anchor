@@ -187,3 +187,33 @@ export interface CalendarEvent {
   updatedAt: string;
 }
 
+export interface Subject {
+  id: string;
+  userId: string;
+  name: string;
+  color: string;
+  instructor: string | null;
+  term: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AssignmentKind = 'assignment' | 'exam' | 'project';
+export type AssignmentStatus = 'pending' | 'completed';
+
+export interface Assignment {
+  id: string;
+  userId: string;
+  subjectId: string;
+  kind: AssignmentKind;
+  title: string;
+  /** 'YYYY-MM-DD' */
+  dueDate: string | null;
+  /** 'HH:MM' */
+  dueTime: string | null;
+  notes: string | null;
+  status: AssignmentStatus;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

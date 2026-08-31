@@ -156,6 +156,37 @@ export async function initDatabase(): Promise<void> {
       deleted INTEGER NOT NULL DEFAULT 0,
       synced_at TEXT
     );
+    -- Phase 6: subjects and assignments (assignment/exam/project share
+    -- one table via 'kind', matching the Postgres schema). Study sessions
+    -- reuse the existing local_events table - no new table for them.
+    CREATE TABLE IF NOT EXISTS local_subjects (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      color TEXT NOT NULL,
+      instructor TEXT,
+      term TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted INTEGER NOT NULL DEFAULT 0,
+      synced_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS local_assignments (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL,
+      subject_id TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      title TEXT NOT NULL,
+      due_date TEXT,
+      due_time TEXT,
+      notes TEXT,
+      status TEXT NOT NULL,
+      completed_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      deleted INTEGER NOT NULL DEFAULT 0,
+      synced_at TEXT
+    );
     -- Read-only local mirrors (no queue entries - see lib/sync/engine.ts)
     -- so category/calendar pickers still work while offline.
     CREATE TABLE IF NOT EXISTS local_categories (

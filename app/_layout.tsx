@@ -40,6 +40,8 @@ export default function RootLayout() {
             <Stack.Screen name="habit-new" options={{ presentation: 'modal' }} />
             <Stack.Screen name="shopping-item-new" options={{ presentation: 'modal' }} />
             <Stack.Screen name="document-new" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="subject-new" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="assignment-new" options={{ presentation: 'modal' }} />
           </Stack>
         </AppProviders>
       </SafeAreaProvider>
