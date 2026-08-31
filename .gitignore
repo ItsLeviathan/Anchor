@@ -41,6 +41,6 @@ yarn-error.*
 /ios
 /android
 
-
+# auto-git
 .auto-git/*.log
 .auto-git/watcher.lock
