@@ -1,5 +1,5 @@
 $repo = "D:\anchor"
-$delay = 10
+$delay = 600
 
 # OpenAI API key must be stored as an environment variable.
 # In PowerShell, set it once with:
@@ -27,7 +27,7 @@ function Get-AICommitMessage {
     param (
         [string]$Diff
     )
-
+ 
     $prompt = @"
 You are generating a Git commit message for a software project called Anchor.
 
