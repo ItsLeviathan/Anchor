@@ -40,7 +40,3 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-
-# auto-git
-.auto-git/*.log
-.auto-git/watcher.lock
