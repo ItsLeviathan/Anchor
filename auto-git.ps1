@@ -1,187 +1,253 @@
-$repo = "D:\anchor"
-$delay = 600
+<#
+.SYNOPSIS
+    Anchor Auto-Git Watcher.
 
-# OpenAI API key must be stored as an environment variable.
-# In PowerShell, set it once with:
-# [Environment]::SetEnvironmentVariable("OPENAI_API_KEY", "your-key", "User")
+.DESCRIPTION
+    Watches the Anchor repo for changes. After $IdleMinutes of inactivity
+    (no new changes showing up in `git status`), it stages everything,
+    builds a commit message from a local heuristic (no AI API, no key
+    needed), commits, and pushes to the tracked remote branch.
 
-$apiKey = [Environment]::GetEnvironmentVariable("OPENAI_API_KEY", "User")
+    Safe to leave running: if there is nothing to commit it just keeps
+    polling quietly. If a push fails (e.g. no network, remote ahead) it
+    keeps the commit local and retries the push on the next cycle instead
+    of losing work or looping.
 
-if (-not $apiKey) {
-    Write-Host "ERROR: OPENAI_API_KEY is not configured." -ForegroundColor Red
-    Write-Host "Set it with:" -ForegroundColor Yellow
-    Write-Host '[Environment]::SetEnvironmentVariable("OPENAI_API_KEY", "your-key", "User")'
+.PARAMETER RepoPath
+    Path to the Anchor repo. Defaults to D:\anchor.
+
+.PARAMETER IdleMinutes
+    Minutes of inactivity required before an auto-commit fires. Defaults to 10.
+
+.PARAMETER PollSeconds
+    How often to check git status, in seconds. Defaults to 15.
+
+.PARAMETER Branch
+    Branch to push. Used only as a safety check (see Invoke-AutoCommitAndPush) —
+    the actual push uses plain `git push`, relying on the tracking branch
+    already configured for main. Defaults to "main".
+#>
+
+param(
+    [string]$RepoPath   = "D:\anchor",
+    [int]   $IdleMinutes = 10,
+    [int]   $PollSeconds = 15,
+    [string]$Branch      = "main"
+)
+
+$ErrorActionPreference = "Stop"
+
+$logDir   = Join-Path $RepoPath ".auto-git"
+$logFile  = Join-Path $logDir "auto-git.log"
+$lockFile = Join-Path $logDir "watcher.lock"
+New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+
+function Write-Log {
+    param([string]$Message, [string]$Level = "INFO")
+    $line = "[{0}] [{1}] {2}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $Level, $Message
+    Add-Content -Path $logFile -Value $line
+    Write-Host $line
+}
+
+function Get-Humanized {
+    # Turns "RecurringTaskModal.jsx" or "recurring-task-modal" into "recurring task modal"
+    param([string]$Path)
+    $name = [System.IO.Path]::GetFileNameWithoutExtension($Path)
+    $spaced = $name -creplace '([a-z0-9])([A-Z])', '$1 $2'
+    $spaced = $spaced -replace '[-_]', ' '
+    return $spaced.ToLower().Trim()
+}
+
+function Get-SmartCommitMessage {
+    # Stages everything, then inspects what's staged to build a
+    # "<Verb> <affected area>" subject plus a short breakdown body.
+    param([string]$RepoPath)
+
+    Push-Location $RepoPath
+    try {
+        git add -A | Out-Null
+
+        $nameStatus = git diff --cached --name-status
+        if (-not $nameStatus) { return $null }
+
+        $added = @(); $modified = @(); $deleted = @(); $renamed = @()
+
+        foreach ($line in ($nameStatus -split "`n")) {
+            if (-not $line.Trim()) { continue }
+            $parts = $line -split "`t"
+            $code = $parts[0]
+            switch -Regex ($code) {
+                '^A' { $added    += $parts[1] }
+                '^M' { $modified += $parts[1] }
+                '^D' { $deleted  += $parts[1] }
+                '^R' { $renamed  += $parts[-1] }
+                default { $modified += $parts[1] }
+            }
+        }
+
+        $allFiles = $added + $modified + $deleted + $renamed
+
+        # ---- Verb ----
+        $verb = "Update"
+        if ($added.Count -gt 0 -and $modified.Count -eq 0 -and $deleted.Count -eq 0 -and $renamed.Count -eq 0) {
+            $verb = "Add"
+        } elseif ($deleted.Count -gt 0 -and $added.Count -eq 0 -and $modified.Count -eq 0 -and $renamed.Count -eq 0) {
+            $verb = "Remove"
+        } elseif ($renamed.Count -gt 0 -and $added.Count -eq 0 -and $modified.Count -eq 0 -and $deleted.Count -eq 0) {
+            $verb = "Rename"
+        } else {
+            $fullDiff   = git diff --cached
+            $addedLines = ($fullDiff -split "`n") | Where-Object { $_ -match '^\+[^+]' }
+            $fixHits    = ($addedLines -join "`n") | Select-String -Pattern '\b(fix(es|ed)?|bug|error handling|catch\s*\()\b' -AllMatches
+            if ($fixHits -and $fixHits.Matches.Count -ge 2) {
+                $verb = "Fix"
+            }
+        }
+
+        # ---- Scope (which area of the project this touches) ----
+        $dirCounts = @{}
+        foreach ($f in $allFiles) {
+            $dir = Split-Path $f -Parent
+            if (-not $dir) { $dir = "." }
+            $segments = $dir -split '[\\/]'
+            $top = $segments[0..([Math]::Min(1, $segments.Count - 1))] -join '/'
+            if (-not $dirCounts.ContainsKey($top)) { $dirCounts[$top] = 0 }
+            $dirCounts[$top]++
+        }
+        $primaryDir = ($dirCounts.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1).Key
+
+        if ($allFiles.Count -eq 1) {
+            $scope = Get-Humanized $allFiles[0]
+        } elseif ($primaryDir -and $primaryDir -ne "." -and $primaryDir -ne "") {
+            $scope = Get-Humanized $primaryDir
+        } else {
+            $scope = "project files"
+        }
+
+        $subject = "$verb $scope".Trim()
+        if ($subject.Length -gt 72) { $subject = $subject.Substring(0, 69) + "..." }
+        $subject = $subject.Substring(0,1).ToUpper() + $subject.Substring(1)
+
+        $bodyLines = @()
+        if ($added.Count    -gt 0) { $bodyLines += "Added: $($added.Count) file(s)" }
+        if ($modified.Count -gt 0) { $bodyLines += "Modified: $($modified.Count) file(s)" }
+        if ($deleted.Count  -gt 0) { $bodyLines += "Deleted: $($deleted.Count) file(s)" }
+        if ($renamed.Count  -gt 0) { $bodyLines += "Renamed: $($renamed.Count) file(s)" }
+
+        return @{
+            Subject = $subject
+            Body    = ($bodyLines -join "`n")
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
+function Invoke-AutoCommitAndPush {
+    param([string]$RepoPath, [string]$Branch)
+
+    Push-Location $RepoPath
+    try {
+        $currentBranch = git rev-parse --abbrev-ref HEAD
+        if ($currentBranch -ne $Branch) {
+            Write-Log "On branch '$currentBranch', not '$Branch'. Skipping auto-commit for safety." "WARN"
+            return $true   # not a push failure, just don't touch it
+        }
+    } finally {
+        Pop-Location
+    }
+
+    $msg = Get-SmartCommitMessage -RepoPath $RepoPath
+    if (-not $msg) {
+        Write-Log "Nothing staged after 'git add -A'; skipping commit."
+        return $true
+    }
+
+    Push-Location $RepoPath
+    try {
+        if ($msg.Body) {
+            git commit -m $msg.Subject -m $msg.Body | Out-Null
+        } else {
+            git commit -m $msg.Subject | Out-Null
+        }
+        Write-Log "Committed: $($msg.Subject)"
+
+        $pushOutput = git push 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Log "Push failed, will retry next cycle. Output: $pushOutput" "WARN"
+            return $false
+        }
+        Write-Log "Pushed to origin/$Branch."
+        return $true
+    } finally {
+        Pop-Location
+    }
+}
+
+# ---------------- Main ----------------
+
+if (-not (Test-Path (Join-Path $RepoPath ".git"))) {
+    Write-Log "No .git folder found at $RepoPath. Exiting." "ERROR"
     exit 1
 }
 
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host " Anchor Automatic Git Sync" -ForegroundColor Cyan
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "Repository: $repo" -ForegroundColor Gray
-Write-Host "Idle delay: $delay seconds" -ForegroundColor Gray
-Write-Host ""
-Write-Host "Watching for changes..." -ForegroundColor Green
-Write-Host "Press Ctrl+C to stop." -ForegroundColor Yellow
-
-function Get-AICommitMessage {
-    param (
-        [string]$Diff
-    )
- 
-    $prompt = @"
-You are generating a Git commit message for a software project called Anchor.
-
-Analyze the following Git diff and determine what the developer actually changed.
-
-Rules:
-- Return ONLY the commit message.
-- Use imperative mood.
-- Keep it concise, ideally 3-7 words.
-- Do not include quotes.
-- Do not mention files unless useful.
-- Do not use a period at the end.
-- Examples:
-  Add recurring task support
-  Fix reminder scheduling
-  Update dashboard layout
-  Add expense tracking
-  Fix authentication flow
-  Update project dependencies
-
-Git diff:
-$Diff
-"@
-
-    $body = @{
-        model = "gpt-4.1-mini"
-        messages = @(
-            @{
-                role = "system"
-                content = "You write concise, meaningful Git commit messages."
-            },
-            @{
-                role = "user"
-                content = $prompt
-            }
-        )
-        temperature = 0.2
-        max_tokens = 30
-    } | ConvertTo-Json -Depth 10
-
-    try {
-        $response = Invoke-RestMethod `
-            -Uri "https://api.openai.com/v1/chat/completions" `
-            -Method Post `
-            -Headers @{
-                Authorization = "Bearer $apiKey"
-                "Content-Type" = "application/json"
-            } `
-            -Body ([System.Text.Encoding]::UTF8.GetBytes($body))
-
-        $message = $response.choices[0].message.content.Trim()
-
-        # Remove accidental quotation marks
-        $message = $message.Trim('"').Trim("'")
-
-        if ($message.Length -gt 0) {
-            return $message
-        }
-
-        return "Update project files"
-    }
-    catch {
-        Write-Host "AI commit message generation failed." -ForegroundColor Red
-        Write-Host $_.Exception.Message -ForegroundColor DarkRed
-
-        return "Update project files"
+if (Test-Path $lockFile) {
+    $existingPid = Get-Content $lockFile -ErrorAction SilentlyContinue
+    if ($existingPid -and (Get-Process -Id $existingPid -ErrorAction SilentlyContinue)) {
+        Write-Log "Watcher already running (PID $existingPid). Exiting this instance."
+        exit 0
     }
 }
+Set-Content -Path $lockFile -Value $PID
 
-while ($true) {
+Write-Log "Anchor Auto-Git Watcher started. Repo: $RepoPath | Idle: $IdleMinutes min | Poll: $PollSeconds sec | PID: $PID"
 
-    Set-Location $repo
+try {
+    $idleThreshold  = New-TimeSpan -Minutes $IdleMinutes
+    $lastStatus     = $null
+    $lastChangeTime = Get-Date
+    $pendingPush    = $false
 
-    # Check for changes
-    $status = git status --porcelain
+    while ($true) {
+        Start-Sleep -Seconds $PollSeconds
 
-    if ($status) {
-
-        Write-Host ""
-        Write-Host "Changes detected. Waiting $delay seconds for you to finish..." -ForegroundColor Yellow
-
-        Start-Sleep -Seconds $delay
-
-        # Check again after waiting
-        $statusAfterDelay = git status --porcelain
-
-        if ($statusAfterDelay) {
-
-            Write-Host ""
-            Write-Host "Preparing automatic commit..." -ForegroundColor Cyan
-
-            # Get the actual diff before staging
-            $diff = git diff
-
-            # Include untracked files in the description
-            $untracked = git ls-files --others --exclude-standard
-
-            if ($untracked) {
-                $diff += "`n`nUntracked files:`n$($untracked -join "`n")"
+        if ($pendingPush) {
+            Push-Location $RepoPath
+            git push 2>&1 | Out-Null
+            $ok = ($LASTEXITCODE -eq 0)
+            Pop-Location
+            if ($ok) {
+                Write-Log "Retried push succeeded."
+                $pendingPush = $false
             }
+            continue
+        }
 
-            # Limit enormous diffs
-            if ($diff.Length -gt 30000) {
-                $diff = $diff.Substring(0, 30000)
-                $diff += "`n[Diff truncated]"
+        $status = git -C $RepoPath status --porcelain
+
+        if ($status -ne $lastStatus) {
+            if ($null -ne $lastStatus -and $status) {
+                Write-Log "Change detected, idle timer reset."
             }
+            $lastChangeTime = Get-Date
+            $lastStatus = $status
+            continue
+        }
 
-            Write-Host "Generating commit message..." -ForegroundColor Magenta
+        if ([string]::IsNullOrWhiteSpace($status)) {
+            continue
+        }
 
-            $commitMessage = Get-AICommitMessage -Diff $diff
-
-            Write-Host ""
-            Write-Host "Commit message:" -ForegroundColor Cyan
-            Write-Host "  $commitMessage" -ForegroundColor White
-
-            # Stage everything
-            git add .
-
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "git add failed." -ForegroundColor Red
-                Start-Sleep -Seconds 5
-                continue
-            }
-
-            # Commit
-            git commit -m $commitMessage
-
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "Commit failed." -ForegroundColor Red
-                Start-Sleep -Seconds 5
-                continue
-            }
-
-            # Push
-            Write-Host ""
-            Write-Host "Pushing to GitHub..." -ForegroundColor Cyan
-
-            git push
-
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host ""
-                Write-Host "==========================================" -ForegroundColor Green
-                Write-Host " GitHub updated successfully!" -ForegroundColor Green
-                Write-Host " Commit: $commitMessage" -ForegroundColor Green
-                Write-Host "==========================================" -ForegroundColor Green
-            }
-            else {
-                Write-Host ""
-                Write-Host "Push failed. Your commit is still saved locally." -ForegroundColor Red
-            }
-
-            Start-Sleep -Seconds 3
+        $idleFor = (Get-Date) - $lastChangeTime
+        if ($idleFor -ge $idleThreshold) {
+            Write-Log "$IdleMinutes minutes of inactivity. Auto-committing..."
+            $pushed = Invoke-AutoCommitAndPush -RepoPath $RepoPath -Branch $Branch
+            if (-not $pushed) { $pendingPush = $true }
+            $lastStatus     = git -C $RepoPath status --porcelain
+            $lastChangeTime = Get-Date
         }
     }
-
-    Start-Sleep -Seconds 2
+} finally {
+    Remove-Item $lockFile -ErrorAction SilentlyContinue
+    Write-Log "Watcher stopped (PID $PID)."
 }
