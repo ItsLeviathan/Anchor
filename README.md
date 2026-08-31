@@ -1,118 +1,106 @@
-# Anchor — Phases 1–5 + Phase 6 (Student Mode)
+# Anchor — Phases 1–6 + Phase 7 (AI Assistant)
 
-Phases 1–5 are complete (every option in the global **+** sheet does
-something real). **Phase 6 (Student Mode) is now done.**
+Phases 1–6 are complete. **Phase 7 (AI Assistant) is now done** — though
+most of it turned out not to need AI at all.
 
 ## What's here
 
-**Phases 1–5**: navigation shell, design system, anonymous auth,
+**Phases 1–6**: navigation shell, design system, anonymous auth,
 entitlements, local-first tasks/events/categories/calendars/expenses/
-bills/notes/habits/shopping/documents with a background sync engine,
-reminders, Brain Dump, daily AI planning, a deterministic Quick Add
-parser.
+bills/notes/habits/shopping/documents/subjects/assignments with a
+background sync engine, reminders, Brain Dump, daily AI planning, a
+deterministic Quick Add parser, and opt-in Student Mode.
 
-**Phase 6 — Student Mode (this update)**
+**Phase 7 — AI Assistant (this update)**
 
-- **Off by default, opt-in via a toggle on Profile** — spec section 30's
-  explicit instruction is "do not let Student Mode overwhelm the general
-  experience." A non-student's app looks identical to before this update
-  unless they turn it on
-- **Subjects**: name, instructor, an auto-assigned color
-- **Assignments, exams, and projects share one table via a `kind`
-  column**, rather than three separate tables. This matches the master
-  spec's own suggested schema (section 37 lists only `subjects` and
-  `assignments`, not a separate `exams` table) and meant one new sync
-  entity type covers all three, not three
-- **Study sessions were NOT built as a new entity at all** — they're
-  just regular Calendar events. An event already has everything a study
-  session needs (title, start/end time, automatic reminders); a
-  dedicated table would only have duplicated that. If Student Mode ever
-  needs session-specific data (e.g. tracking actual vs. planned study
-  time), that's the point to reconsider this
-- **A "Student" section appears on Life** (last section, only when
-  enabled) showing each subject as a card with its pending items sorted
-  by due date — matching the spec's own mockup layout (subject name,
-  then Assignment/Exam/Project rows with dates) — with tap-to-complete
-  and per-item delete
-- New assignments/exams/projects are created from a **+** on each
-  subject card (not the global Add sheet — Student Mode items
-  deliberately aren't in that universal 10-option list, keeping it lean
-  for everyone else)
-- `entitlements.canUseAdvancedStudentMode` (declared back in Phase 1's
-  scaffolding) still isn't gating anything concrete — the monetization
-  spec says Free gets "Basic Student Mode" and Pro gets "Advanced
-  Student Mode" without specifying what "advanced" means. Rather than
-  invent an arbitrary restriction, Student Mode works the same for
-  everyone in this build; the flag is there and ready once a concrete
-  advanced capability (e.g. AI syllabus parsing) is actually built
+Section 14 of the master spec is explicit: "Do not rely entirely on AI.
+Use deterministic logic." Applied to this phase, that meant building
+Daily Briefing, Evening Review, and Smart Reminders as pure calculations
+— they don't need a language model, they need arithmetic and calendar
+math, and pure functions are something I can actually test, unlike a
+live AI call.
+
+- **Daily Briefing** (`lib/insights/dailyBriefing.ts`, spec section 32):
+  shown on Today before 6pm. Counts today's important tasks,
+  appointments, upcoming bills, and due habits; names the single most
+  important task; estimates total workload from tasks' estimated
+  durations — matching the spec's own mockup fields exactly, including
+  the "2h 15m" formatting
+- **Evening Review** (`lib/insights/eveningReview.ts`, spec section 33):
+  replaces the Daily Briefing on Today from 6pm onward. Tasks/habits
+  completed today, what's still open, what's on tomorrow
+- **Smart Reminders, done deterministically** (`lib/insights/freeTime.ts`):
+  spec section 17's own example — "You have 90 minutes free this
+  afternoon. Want to work on X?" — is exact calendar-gap math, not
+  something an LLM adds value to. Finds today's largest free gap and
+  matches it against a pending task whose estimated duration fits.
+  Required adding an **estimated-duration field to the task composer**
+  (15m/30m/1h/2h chips), since this feature had nothing to match against
+  otherwise
+- **Personalized Planning / "reset personalization"** (spec section 21):
+  scoped down honestly — there's no persisted, evolving preference
+  model here (that would need real usage data over time to be
+  meaningful), so "reset" is a straightforward on/off toggle on Profile
+  that stops the free-time suggestion from appearing at all. Documented
+  as a deliberate simplification in the code, not a hidden gap
+- **The Insights tab is real now** (spec section 31, a placeholder since
+  Phase 1): Productivity (completion rate, overdue count, average time
+  to complete), Time (workload for the next 7 days, tasks by category),
+  Money (this month's summary, spending by category, a 3-month trend —
+  reusing Phase 5's expense calculations, plus a new
+  `computeMonthlyTrend`), and Habits (streak + 30-day consistency per
+  habit). Deliberately calm, no rankings or comparisons — "the goal is
+  awareness rather than competition," per the spec
 
 ## Setup
 
-### 1. Install dependencies
+No new database migration this update — Phase 7 is entirely
+client-side logic and UI, no new tables.
 
 ```bash
 npm install
-```
-
-### 2–3. Supabase project + env vars
-
-Same as previous updates.
-
-### 4. Run the database migrations, in order
-
-1. `0001_init.sql`
-2. `0002_tasks.sql`
-3. `0003_calendar.sql`
-4. `0004_expenses_bills.sql`
-5. `0005_notes_habits_shopping.sql`
-6. `0006_documents.sql`
-7. `0007_student_mode.sql` ← new this update (adds a column to the
-   existing `profiles` table, plus the new `subjects` and `assignments`
-   tables)
-
-### 5. Deploy the AI Edge Function (optional, from Phase 4)
-
-See the Phase 4 update notes if you haven't already.
-
-### 6. Start the app
-
-```bash
 npx expo start
 ```
 
+(Standard setup from previous updates otherwise — Supabase project,
+`.env`, migrations `0001`–`0007`.)
+
 ## Verifying it works
 
-- With Student Mode off, **Life** should look exactly like it did before
-  this update — no new section, nothing different
-- Go to **Profile**, turn on **Student Mode** — a "Student" section
-  should now appear at the bottom of **Life**
-- Tap **+ Subject**, add one (e.g. "Database Systems")
-- On that subject's card, tap the **+** to add an Exam due in a few days
-  — it should show up under the subject sorted by date
-- Tap the item's circle to mark it complete — it disappears from the
-  pending list (matching how tasks/habits behave elsewhere)
-- Turn Student Mode back off — the section disappears again; your
-  subjects/assignments aren't deleted, just hidden, and come back if you
-  re-enable it
-- Try all of the above offline — same instant, no-spinner behavior as
-  everything else local-first
+- Open the app before 6pm — Today should show a "TODAY YOU HAVE" card
+  summarizing counts, your most important task, and an estimated
+  workload (only if at least one of today's tasks has an estimated
+  duration set)
+- Change your device clock to after 6pm (or just check back in the
+  evening) — the card becomes "YOUR DAY" instead, showing what got done
+- Create a task with an estimated duration (e.g. 30m), leave it
+  unscheduled, and make sure you have at least a 30-minute gap in your
+  calendar today — a "You have N minutes free..." card should appear
+  suggesting that task
+- Turn off **Personalized suggestions** on Profile — that card stops
+  appearing
+- Check the **Insights** tab — it should now show real numbers, not a
+  placeholder. Complete a few tasks and habits, log some expenses, and
+  watch the numbers update
 
 ## What's intentionally not built yet
 
-- Assignments/exams don't surface on **Today** alongside tasks — kept
-  scoped to Life's Student section for this pass, to avoid any
-  Student-Mode complexity bleeding into the core experience non-students
-  see every day
-- Attendance tracking (mentioned in spec section 30's broader vision, but
-  not part of Phase 6's actual build list in section 51)
-- Subject editing, assignment editing (only create/complete/delete exist)
-- Any concrete "Advanced Student Mode" capability for
-  `canUseAdvancedStudentMode` to gate
+- Repeating morning/evening push notifications for the Briefing/Review
+  (they're in-app cards only for now) — this would need Expo's
+  calendar-based repeating notification triggers, which I chose not to
+  ship without being able to test that a `repeats: true` trigger
+  actually behaves correctly on a real device
+- A genuinely learned personalization model (preferred working hours
+  inferred from behavior, etc.) — the current free-time suggestion uses
+  fixed 8am–9pm day bounds, not an adapted schedule
+- Workload-by-day and category distribution in Insights are lists, not
+  charts/bars — a natural follow-up once a charting approach is chosen
+- No paywall UI or actual billing integration — entitlements and AI
+  quota enforcement (Phase 4) are real, but nothing sells anything yet
 
 ## Onward
 
-With Phase 6 done, what's left from the master spec: **Phase 7** (AI
-Assistant: daily briefing, evening review, smart reminders, AI
-insights), **Phase 8** (widgets), **Phase 9** (polish/accessibility/App
-Store prep) — plus the monetization spec's paywall and actual billing
-integration, which still hasn't been started at all.
+With Phase 7 done, what's left from the master spec: **Phase 8**
+(widgets — Today/Quick Add/Habit/Countdown), **Phase 9**
+(polish/accessibility/App Store prep) — plus the monetization spec's
+paywall and actual billing integration, still untouched.

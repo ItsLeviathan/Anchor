@@ -6,6 +6,7 @@ import { Card } from '../../../components/ui';
 import { cacheProfile, getCachedProfile, type CachedProfile } from '../../../lib/database/db';
 import { useEntitlements } from '../../../lib/entitlements/useEntitlements';
 import { areRemindersEnabled, setRemindersEnabled } from '../../../lib/notifications/preferences';
+import { arePersonalizedSuggestionsEnabled, setPersonalizedSuggestionsEnabled } from '../../../lib/insights/preferences';
 import { useSession } from '../../../lib/supabase/useSession';
 import { useTheme } from '../../../lib/theme/ThemeProvider';
 import { useSetStudentMode, useStudentMode } from '../../../features/studentMode/useStudentMode';
@@ -19,11 +20,15 @@ export default function ProfileScreen() {
   const setStudentMode = useSetStudentMode(session?.user.id);
   const [cached, setCached] = useState<CachedProfile | null>(null);
   const [remindersOn, setRemindersOn] = useState(true);
+  const [personalizedSuggestionsOn, setPersonalizedSuggestionsOn] = useState(true);
 
   useEffect(() => {
     areRemindersEnabled()
       .then(setRemindersOn)
       .catch((err) => console.error('Failed to load reminder preference', err));
+    arePersonalizedSuggestionsEnabled()
+      .then(setPersonalizedSuggestionsOn)
+      .catch((err) => console.error('Failed to load personalization preference', err));
   }, []);
 
   async function handleToggleReminders(value: boolean) {
@@ -33,6 +38,16 @@ export default function ProfileScreen() {
     } catch (err) {
       console.error('Failed to save reminder preference', err);
       setRemindersOn(!value);
+    }
+  }
+
+  async function handleTogglePersonalizedSuggestions(value: boolean) {
+    setPersonalizedSuggestionsOn(value);
+    try {
+      await setPersonalizedSuggestionsEnabled(value);
+    } catch (err) {
+      console.error('Failed to save personalization preference', err);
+      setPersonalizedSuggestionsOn(!value);
     }
   }
 
@@ -109,6 +124,22 @@ export default function ProfileScreen() {
               <Switch
                 value={remindersOn}
                 onValueChange={handleToggleReminders}
+                trackColor={{ true: colors.accent, false: colors.border }}
+              />
+            </View>
+          </Card>
+
+          <Card style={{ marginTop: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1, marginRight: spacing.md }}>
+                <Text style={[typography.headline, { color: colors.textPrimary }]}>Personalized suggestions</Text>
+                <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
+                  Free-time suggestions based on your schedule and task estimates
+                </Text>
+              </View>
+              <Switch
+                value={personalizedSuggestionsOn}
+                onValueChange={handleTogglePersonalizedSuggestions}
                 trackColor={{ true: colors.accent, false: colors.border }}
               />
             </View>

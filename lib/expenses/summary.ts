@@ -54,3 +54,26 @@ export function computeCategoryTotals(expenses: Expense[], now: Date = new Date(
     .map(([category, total]) => ({ category, total: round2(total) }))
     .sort((a, b) => b.total - a.total);
 }
+
+export interface MonthTrend {
+  label: string;
+  income: number;
+  expenses: number;
+}
+
+/** Most recent `monthsBack` months, oldest first - handy for a simple trend list/chart. */
+export function computeMonthlyTrend(expenses: Expense[], monthsBack = 3, now: Date = new Date()): MonthTrend[] {
+  const result: MonthTrend[] = [];
+
+  for (let i = monthsBack - 1; i >= 0; i -= 1) {
+    const target = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const summary = computeMonthlySummary(expenses, target);
+    result.push({
+      label: target.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }),
+      income: summary.income,
+      expenses: summary.expenses,
+    });
+  }
+
+  return result;
+}

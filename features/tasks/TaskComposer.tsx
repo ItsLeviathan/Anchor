@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-nat
 
 import { CategoryChipList } from '../../components/categories/CategoryChipList';
 import { DueDatePicker } from '../../components/tasks/DueDatePicker';
+import { DurationSelector } from '../../components/tasks/DurationSelector';
 import { PrioritySelector } from '../../components/tasks/PrioritySelector';
 import { RecurrenceSelector } from '../../components/tasks/RecurrenceSelector';
 import { Button, Input, Sheet } from '../../components/ui';
@@ -46,6 +47,7 @@ export function TaskComposer() {
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule | null>(null);
+  const [estimatedDurationMinutes, setEstimatedDurationMinutes] = useState<number | null>(null);
 
   const canSave = title.trim().length > 0 && Boolean(userId) && !createTask.isPending;
 
@@ -100,6 +102,7 @@ export function TaskComposer() {
       dueTime: dueDate ? toTimePart(dueDate) : null,
       priority,
       recurrenceRule: dueDate ? recurrenceRule : null,
+      estimatedDurationMinutes,
     });
 
     router.back();
@@ -159,6 +162,13 @@ export function TaskComposer() {
               PRIORITY
             </Text>
             <PrioritySelector value={priority} onChange={setPriority} />
+
+            <Text
+              style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}
+            >
+              ESTIMATED TIME
+            </Text>
+            <DurationSelector value={estimatedDurationMinutes} onChange={setEstimatedDurationMinutes} />
 
             {categories.length > 0 ? (
               <>

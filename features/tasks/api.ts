@@ -36,6 +36,7 @@ export interface CreateTaskInput {
   dueTime?: string | null;
   priority?: TaskPriority;
   recurrenceRule?: RecurrenceRule | null;
+  estimatedDurationMinutes?: number | null;
 }
 
 export async function createTask(input: CreateTaskInput): Promise<Task> {
@@ -50,7 +51,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     due_time: input.dueTime ?? null,
     priority: input.priority ?? 'medium',
     status: 'pending',
-    estimated_duration_minutes: null,
+    estimated_duration_minutes: input.estimatedDurationMinutes ?? null,
     actual_duration_minutes: null,
     recurrence_rule: (input.recurrenceRule as unknown as Record<string, unknown>) ?? null,
     completed_at: null,
