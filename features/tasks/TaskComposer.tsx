@@ -50,6 +50,10 @@ export function TaskComposer() {
   const [estimatedDurationMinutes, setEstimatedDurationMinutes] = useState<number | null>(null);
 
   const canSave = title.trim().length > 0 && Boolean(userId) && !createTask.isPending;
+
+  // Quick Add detection (spec section 20): purely local pattern matching,
+  // no AI/network call. Only offered while no date has been set yet, so it
+  // never fights with something the user picked deliberately.
   const parsed = title.trim().length > 2 ? parseQuickAdd(title) : null;
   const showDetection = Boolean(parsed?.dueDate) && !dueDate;
 
