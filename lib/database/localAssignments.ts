@@ -107,3 +107,5 @@ export async function removeLocalAssignment(id: string): Promise<void> {
   const db = await getDb();
   await db.runAsync(`DELETE FROM local_assignments WHERE id = ?;`, [id]);
 }
+
+
