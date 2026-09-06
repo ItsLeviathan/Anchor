@@ -3,7 +3,7 @@ import { enqueueDelete, enqueueUpsert } from '../../lib/sync/engine';
 import { generateId } from '../../lib/sync/ids';
 import type { CalendarEvent, RecurrenceRule } from '../../types';
 
-function mapRow(row: EventRow): CalendarEvent {
+export function mapEventRow(row: EventRow): CalendarEvent {
   return {
     id: row.id,
     userId: row.user_id,
@@ -22,7 +22,7 @@ function mapRow(row: EventRow): CalendarEvent {
 
 export async function fetchEvents(userId: string): Promise<CalendarEvent[]> {
   const rows = await getLocalEvents(userId);
-  return rows.map(mapRow);
+  return rows.map(mapEventRow);
 }
 
 export interface CreateEventInput {
@@ -55,7 +55,7 @@ export async function createEvent(input: CreateEventInput): Promise<CalendarEven
   await upsertLocalEvent(row);
   await enqueueUpsert('event', row.id, row as unknown as Record<string, unknown>);
 
-  return mapRow(row);
+  return mapEventRow(row);
 }
 
 export async function deleteEvent(id: string): Promise<void> {

@@ -3,7 +3,7 @@ import { enqueueDelete, enqueueUpsert } from '../../lib/sync/engine';
 import { generateId } from '../../lib/sync/ids';
 import type { RecurrenceRule, Task, TaskPriority, TaskStatus } from '../../types';
 
-function mapRow(row: TaskRow): Task {
+export function mapTaskRow(row: TaskRow): Task {
   return {
     id: row.id,
     userId: row.user_id,
@@ -25,7 +25,7 @@ function mapRow(row: TaskRow): Task {
 
 export async function fetchTasks(userId: string): Promise<Task[]> {
   const rows = await getLocalTasks(userId);
-  return rows.map(mapRow);
+  return rows.map(mapTaskRow);
 }
 
 export interface CreateTaskInput {
@@ -62,7 +62,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
   await upsertLocalTask(row);
   await enqueueUpsert('task', row.id, row as unknown as Record<string, unknown>);
 
-  return mapRow(row);
+  return mapTaskRow(row);
 }
 
 export interface UpdateTaskInput {
@@ -91,7 +91,7 @@ export async function updateTask({ id, ...patch }: UpdateTaskInput): Promise<Tas
   await upsertLocalTask(row);
   await enqueueUpsert('task', row.id, row as unknown as Record<string, unknown>);
 
-  return mapRow(row);
+  return mapTaskRow(row);
 }
 
 export async function setTaskStatus(id: string, status: TaskStatus): Promise<Task> {
@@ -108,7 +108,7 @@ export async function setTaskStatus(id: string, status: TaskStatus): Promise<Tas
   await upsertLocalTask(row);
   await enqueueUpsert('task', row.id, row as unknown as Record<string, unknown>);
 
-  return mapRow(row);
+  return mapTaskRow(row);
 }
 
 export async function deleteTask(id: string): Promise<void> {

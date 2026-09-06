@@ -2,8 +2,11 @@ import NetInfo from '@react-native-community/netinfo';
 import { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
+import { setLocalSetting } from '../database/db';
 import { useSyncStore } from '../../store/useSyncStore';
 import { refreshPendingCount, syncOnAppStart, syncOnReconnect, triggerFlush } from './engine';
+
+const CURRENT_USER_ID_KEY = 'current_user_id';
 
 /**
  * Three triggers cover the realistic scenarios from spec section 38's
@@ -44,6 +47,11 @@ export function useSyncLifecycle(userId: string | undefined): void {
   useEffect(() => {
     if (!userId || hasRunInitialSync.current) return;
     hasRunInitialSync.current = true;
+
+    setLocalSetting(CURRENT_USER_ID_KEY, userId).catch((err) =>
+      console.error('Failed to persist current user id for widgets', err)
+    );
+
     syncOnAppStart(userId).catch((err) => console.error('Initial sync failed', err));
   }, [userId]);
 }

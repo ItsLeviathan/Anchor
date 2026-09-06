@@ -3,7 +3,7 @@ import { enqueueDelete, enqueueUpsert } from '../../lib/sync/engine';
 import { generateId } from '../../lib/sync/ids';
 import type { Bill, BillStatus, MoneyCategory, RecurrenceRule } from '../../types';
 
-function mapRow(row: BillRow): Bill {
+export function mapBillRow(row: BillRow): Bill {
   return {
     id: row.id,
     userId: row.user_id,
@@ -24,7 +24,7 @@ function mapRow(row: BillRow): Bill {
 
 export async function fetchBills(userId: string): Promise<Bill[]> {
   const rows = await getLocalBills(userId);
-  return rows.map(mapRow);
+  return rows.map(mapBillRow);
 }
 
 export interface CreateBillInput {
@@ -60,7 +60,7 @@ export async function createBill(input: CreateBillInput): Promise<Bill> {
   await upsertLocalBill(row);
   await enqueueUpsert('bill', row.id, row as unknown as Record<string, unknown>);
 
-  return mapRow(row);
+  return mapBillRow(row);
 }
 
 export async function setBillStatus(bill: Bill, status: BillStatus): Promise<Bill> {
@@ -84,7 +84,7 @@ export async function setBillStatus(bill: Bill, status: BillStatus): Promise<Bil
   await upsertLocalBill(row);
   await enqueueUpsert('bill', row.id, row as unknown as Record<string, unknown>);
 
-  return mapRow(row);
+  return mapBillRow(row);
 }
 
 export async function deleteBill(id: string): Promise<void> {
