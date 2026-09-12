@@ -122,3 +122,6 @@ npx expo run:android   # or: npx eas build --platform ios --profile development
   an actual screenshot, which needs a working build first
 - No paywall UI or actual billing integration, still - Phase 9 (polish)
   is the only phase left after this from the master spec
+
+
+
