@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
-import { type ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import React, { useEffect, useRef } from 'react';
+import { Animated, type ViewStyle } from 'react-native';
 
 import { useReducedMotion } from '../../lib/a11y/useReducedMotion';
 
@@ -13,23 +12,22 @@ interface FadeInViewProps {
 
 export function FadeInView({ children, delay = 0, duration = 220, style }: FadeInViewProps) {
   const reducedMotion = useReducedMotion();
-  const opacity = useSharedValue(reducedMotion ? 1 : 0);
+  const opacity = useRef(new Animated.Value(reducedMotion ? 1 : 0)).current;
 
   useEffect(() => {
     if (reducedMotion) {
-      opacity.value = 1;
+      opacity.setValue(1);
       return;
     }
-    if (delay > 0) {
-      const timer = setTimeout(() => {
-        opacity.value = withTiming(1, { duration });
-      }, delay);
-      return () => clearTimeout(timer);
-    }
-    opacity.value = withTiming(1, { duration });
+    const anim = Animated.timing(opacity, {
+      toValue: 1,
+      duration,
+      delay,
+      useNativeDriver: true,
+    });
+    anim.start();
+    return () => anim.stop();
   }, [reducedMotion, delay, duration, opacity]);
 
-  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-
-  return <Animated.View style={[animStyle, style]}>{children}</Animated.View>;
+  return <Animated.View style={[{ opacity }, style]}>{children}</Animated.View>;
 }
