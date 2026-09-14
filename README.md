@@ -1,127 +1,203 @@
-# Anchor — Phases 1–7 + Phase 8 (Widgets)
+# Anchor
 
-Phases 1–7 are complete. **Phase 8 (Widgets) is scaffolded** — please
-read this whole section before building. This phase is fundamentally
-different from every other phase in this project: it requires native
-code and a workflow change, not just new JS.
+> **Keep your life together.**
 
-## The workflow change - read this first
+A premium cross-platform personal life-management app built with Expo (React Native), Supabase, and TypeScript. All nine development phases are complete.
 
-Every phase through Phase 7 ran in **Expo Go** with `npx expo start`.
-**That stops working once these widget libraries are linked.** Widgets
-need real native project code (an iOS Widget Extension, an Android
-`AppWidgetProvider`), which Expo Go's fixed set of built-in modules can't
-contain. From this point on, running the app at all - not just testing
-the widget - requires:
+---
 
-1. `npx expo prebuild` - generates real `ios/` and `android/` native
-   project folders from your Expo config (including the two plugin
-   configs in `app.json`)
-2. A **development build** instead of Expo Go:
-   - **Android**: `npx expo run:android` works fine locally on Windows
-     with Android Studio installed (just the SDK/emulator, not Xcode)
-   - **iOS**: you don't have a Mac, so local builds aren't possible -
-     use **EAS Build**'s cloud service instead, which compiles on
-     Expo's own Mac infrastructure:
-     ```bash
-     npx eas build --platform ios --profile development
-     ```
-     You'll need a free Expo account either way, and an Apple Developer
-     account ($99/year) to install on a real device or submit anywhere
-     beyond a simulator
+## What it does
 
-If you're not ready to commit to that workflow change yet, it's
-completely reasonable to hold off on merging this update until you are
-- everything through Phase 7 still runs in Expo Go exactly as before.
+Anchor brings tasks, calendar, reminders, bills, expenses, habits, shopping, notes, documents, and school management into one calm, intelligent environment. AI (via Supabase Edge Functions) handles brain-dump parsing, task breakdown, and daily planning without dominating the interface. Everything works offline and syncs automatically when connectivity returns.
 
-## What's here
+---
 
-One widget - **"Today"** - covering two of the spec's four widget
-concepts at once (Today Widget + Countdown Widget from section 34):
-important task, next event, and the nearest upcoming deadline (bill or
-document expiration). Read-only, tap opens the app. Built for both
-platforms:
+## Tech stack
 
-- **iOS**: via `expo-widgets` - Expo's own **official, first-party**
-  widget package (stable since SDK 56). This means no raw Swift code at
-  all; the widget UI (`widgets/ios/TodayWidget.tsx`) is written with
-  `@expo/ui/swift-ui` components, the same way everything else in this
-  app is written
-- **Android**: via `react-native-android-widget`, the established
-  community library for this - JSX-like `FlexWidget`/`TextWidget`
-  components that compile to native `RemoteViews`
-  (`widgets/android/TodayWidget.tsx`)
-- **Shared, pure, tested logic** (`lib/widgets/widgetData.ts`) drives
-  both - one function computing what the widget should show, verified
-  in Node the same way as every other pure module in this project
-- **Widget content refreshes automatically** whenever the sync queue
-  finishes flushing (`lib/sync/engine.ts`) - which covers almost every
-  meaningful data change, since nearly every mutation already triggers a
-  flush
-- A **real bug caught while wiring the Android entry point**:
-  `react-native-android-widget` requires registering its task handler
-  before Expo Router boots, in a new `index.ts` (replacing the direct
-  `expo-router/entry` main). My first draft used a static
-  `import 'expo-router/entry'` at the bottom of the file - but static
-  imports are hoisted in JavaScript, so it would have actually run
-  *before* the registration call despite being written after it,
-  silently defeating the whole point. Fixed by using `require()`
-  instead, which executes inline rather than being hoisted
+| Layer | Technology |
+|---|---|
+| Framework | Expo SDK 57 · Expo Router · React Native 0.86 |
+| Language | TypeScript 6 |
+| Backend | Supabase (PostgreSQL · Auth · Storage · Edge Functions) |
+| Local DB | SQLite via `expo-sqlite` |
+| State | Zustand (UI/local) · TanStack Query v5 (server) |
+| Animation | React Native Reanimated 4 · Gesture Handler 2 |
+| Auth storage | `expo-secure-store` |
+| Notifications | `expo-notifications` |
+| Widgets | `expo-widgets` (iOS) · `react-native-android-widget` (Android) |
 
-## Please read before attempting to build this
+---
 
-**This is the least-verified code in the entire project.** Everything
-through Phase 7 was either type-checked, run against real test cases in
-Node, or both. Widgets involve native compilation (Swift on Apple's
-side, Kotlin/Gradle on Android's), and I have no way to run `expo
-prebuild`, Gradle, or Xcode in this environment to catch mistakes before
-they reach you. What I can tell you:
+## Development phases
 
-- `npx tsc --noEmit` passes clean, including the iOS widget's usage of
-  `@expo/ui/swift-ui` - this confirms the *shapes* I'm calling
-  (component props, function signatures) match what the installed
-  package actually exports, which rules out a whole class of mistakes,
-  but says nothing about whether the Swift side actually compiles
-- The `@expo/ui/swift-ui/modifiers` calls (`font(...)`, `padding(...)`)
-  are the part most likely to need a small adjustment - check
-  `docs.expo.dev/versions/latest/sdk/widgets/` against whatever version
-  actually resolves in your install if the iOS build fails there
-- The Android side follows the library's own documented setup pattern
-  closely, but again - never actually built
+All phases are complete.
 
-**Practically**: run `npx expo prebuild`, then try the Android build
-first (`npx expo run:android` - faster iteration, and you can actually
-see build errors locally on Windows). Get that working, then move to
-`eas build` for iOS once you're confident the shared logic and Android
-side are solid.
+| Phase | Scope |
+|---|---|
+| 1 — Foundation | Expo project, TypeScript, routing, design system, Supabase, anonymous auth, database, RLS, local persistence |
+| 2 — Core Anchor | Today screen, tasks, categories, calendar, reminders, recurring tasks |
+| 3 — Offline | SQLite local DB, sync engine, offline create/edit/delete, conflict resolution, sync indicators |
+| 4 — Intelligence | Brain Dump, AI extraction, natural language creation, task breakdown, smart prioritization, daily planning |
+| 5 — Life | Expenses, bills, documents (vault), notes, habits, shopping lists |
+| 6 — Student Mode | Subjects, assignments, exams, academic deadlines |
+| 7 — AI Assistant | Daily briefing, evening review, smart reminders, personalized planning, AI insights |
+| 8 — Widgets | Today widget (iOS + Android), shared widget data logic, auto-refresh on sync |
+| 9 — Polish | Error handling, accessibility, animations, performance, onboarding, App Store preparation |
+
+---
+
+## Phase 9 — Polish (what was added)
+
+### Error handling
+- `ErrorBoundary` component wraps the entire app — render crashes show a calm fallback instead of a native crash screen
+- `ToastContainer` + Zustand toast store — errors surface as floating toasts, auto-dismissed after 4 seconds
+- TanStack Query `MutationCache` global `onError` — every failed mutation automatically shows a toast without touching individual hooks
+
+### Accessibility
+- `lib/a11y/useReducedMotion.ts` — reads the system Reduce Motion preference; animations are skipped when enabled
+- `accessibilityHint` added to every interactive element: task completion/deletion, habit toggles, bill payment, shopping items, document open/delete, note pin/delete, all buttons
+
+### Animations
+- `FadeInView` component — Reanimated-powered fade-in wrapper with optional delay; respects Reduce Motion automatically
+- `TaskRow` and `HabitListItem` fade in when they mount
+
+### Performance
+- `React.memo` applied to all list-item components: `TaskRow`, `HabitListItem`, `BillListItem`, `ShoppingItemRow`, `DocumentListItem`, `NoteListItem`, `Card`, `CategorySummaryRow`
+
+### Onboarding
+- Welcome screen on first launch (`app/(onboarding)/welcome.tsx`) — branded, shows "Get started" (anonymous) and "I already have an account" paths
+- Sign-in screen (`app/(onboarding)/sign-in.tsx`) — email/password with toast error feedback
+- Sign-up screen (`app/(onboarding)/sign-up.tsx`) — with email confirmation state
+- First-launch flag stored in `expo-secure-store` — welcome screen only shows once
+- Profile tab shows "Create account / Sign in" buttons inline for anonymous users
+
+### App Store preparation
+- `app.json` — display name "Anchor", bundle ID `com.anchor.app`, iOS permission strings (camera, photos, Face ID), Android permissions, build numbers
+- `eas.json` — EAS build profiles: `development` (simulator), `preview` (internal distribution), `production` (autoIncrement)
+
+---
+
+## Project structure
+
+```
+app/
+  (tabs)/         — Today · Calendar · Life · Insights · Profile
+  (onboarding)/   — Welcome · Sign-in · Sign-up
+  *-new.tsx       — Modal screens for creating each entity type
+  brain-dump.tsx  — Brain Dump modal
+
+components/
+  ui/             — Button · Card · Input · Sheet · FadeInView · Toast · ErrorBoundary
+  tasks/          — TaskRow
+  habits/         — HabitListItem
+  bills/          — BillListItem
+  ...             — (one folder per domain)
+
+features/         — Business logic hooks (useTasks, useBills, …) + composers
+lib/
+  a11y/           — useReducedMotion
+  ai/             — Edge Function client
+  database/       — SQLite schema + helpers
+  entitlements/   — Free vs Pro entitlement layer
+  onboarding/     — First-launch flag
+  query/          — TanStack Query client (with global mutation error handler)
+  sync/           — Sync engine
+  theme/          — Design tokens + ThemeProvider
+  toast/          — Zustand toast store
+  widgets/        — Widget data computation
+
+supabase/
+  migrations/     — PostgreSQL schema
+  functions/      — Edge Functions (AI)
+
+widgets/
+  ios/            — SwiftUI widget via @expo/ui/swift-ui
+  android/        — FlexWidget via react-native-android-widget
+```
+
+---
 
 ## Setup
 
-No new database migration. No new environment variables. This phase is
-entirely new packages, native config, and widget-specific files.
+### 1. Environment
+
+Copy `.env.example` to `.env` and fill in your Supabase project values:
+
+```bash
+cp .env.example .env
+```
+
+```
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Never put the service-role key in `.env`. It never leaves the backend.
+
+### 2. Database
+
+Apply the migrations in `supabase/migrations/` to your Supabase project (in order). Row Level Security is enabled on every user-owned table.
+
+### 3. Install and run
 
 ```bash
 npm install
-npx expo prebuild
-npx expo run:android   # or: npx eas build --platform ios --profile development
+npx expo prebuild        # generates ios/ and android/ native projects
+npx expo run:android     # local Android build (requires Android Studio)
 ```
 
-## What's intentionally not built yet
+For iOS (requires a Mac or EAS cloud):
 
-- **Quick Add Widget** and a standalone **Habit Widget** (spec section
-  34 lists four widgets; this update ships one covering two of the four
-  concepts) - same pattern (own data function, own platform components)
-  applies to both, straightforward to add once the Today widget is
-  confirmed working
-- **True in-widget interactivity** (e.g. checking off a habit without
-  opening the app) - both platforms support this in principle (iOS via
-  App Intents, Android via the task handler's `WIDGET_CLICK` branch
-  wired to real actions), but it's meaningfully more complex and even
-  less verifiable than what's here, so it's tap-to-open-app only for now
-- A `previewImage` for the widget picker UI on either platform - needs
-  an actual screenshot, which needs a working build first
-- No paywall UI or actual billing integration, still - Phase 9 (polish)
-  is the only phase left after this from the master spec
+```bash
+npx eas build --platform ios --profile development
+```
 
+### 4. Production build
 
+```bash
+npx eas build --platform all --profile production
+npx eas submit --platform all
+```
 
+---
+
+## Running without native widgets (Expo Go)
+
+The widget libraries require a native build. If you want to iterate quickly on JS-only changes before committing to a full build, remove or comment out the `expo-widgets` and `react-native-android-widget` plugin entries in `app.json` and run:
+
+```bash
+npx expo start
+```
+
+Everything except the widgets works in Expo Go.
+
+---
+
+## Design language
+
+Anchor's visual identity: **minimal · premium · calm · human**
+
+- Generous whitespace, strong typography, rounded surfaces
+- Restrained color — muted green accent (`#2F6F5E` light / `#5FA98D` dark)
+- Full dark mode via system preference (`userInterfaceStyle: automatic`)
+- No hardcoded colors anywhere — all values come from `lib/theme/tokens.ts`
+
+---
+
+## Monetization
+
+Anchor uses a freemium model. The entitlement layer lives in `lib/entitlements/`. Free users get core features + 10 AI actions per month. Anchor Pro unlocks advanced AI, insights, widgets, and documents. Subscription state is validated server-side — never trusted from a client boolean.
+
+Pricing is not hard-coded. Product identifiers are managed through Apple App Store Connect and Google Play Console.
+
+---
+
+## Privacy
+
+Anchor contains highly personal information. Architecture reflects this:
+
+- Row Level Security on every Supabase table
+- Session tokens stored in `expo-secure-store`
+- Documents served via signed URLs, never public
+- AI requests routed through Edge Functions — API keys never reach the client
+- No user data sold or used for advertising
