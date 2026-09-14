@@ -4,10 +4,8 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } f
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card } from '../../../components/ui';
-import { useRemainingAiActions } from '../../../features/ai/useAiUsage';
 import { useSetStudentMode, useStudentMode } from '../../../features/studentMode/useStudentMode';
 import { cacheProfile, getCachedProfile, type CachedProfile } from '../../../lib/database/db';
-import { useEntitlements } from '../../../lib/entitlements/useEntitlements';
 import { arePersonalizedSuggestionsEnabled, setPersonalizedSuggestionsEnabled } from '../../../lib/insights/preferences';
 import { areRemindersEnabled, setRemindersEnabled } from '../../../lib/notifications/preferences';
 import { isBiometricAvailable, setAppLockEnabled } from '../../../lib/security/appLock';
@@ -21,8 +19,6 @@ export default function ProfileScreen() {
   const { colors, spacing, typography, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const { session, isLoading: isSessionLoading } = useSession();
-  const { entitlements, isLoading: isEntitlementsLoading } = useEntitlements(session?.user.id);
-  const { remaining, limit: aiLimit, used: aiUsed, isLoading: isAiUsageLoading } = useRemainingAiActions(session?.user.id);
   const { data: studentModeOn = false, isLoading: isStudentModeLoading } = useStudentMode(session?.user.id);
   const setStudentMode = useSetStudentMode(session?.user.id);
   const [cached, setCached] = useState<CachedProfile | null>(null);
@@ -114,7 +110,7 @@ export default function ProfileScreen() {
       .catch((err) => console.error('Local profile cache failed', err));
   }, [session]);
 
-  const isLoading = isSessionLoading || isEntitlementsLoading || isStudentModeLoading || isAiUsageLoading;
+  const isLoading = isSessionLoading || isStudentModeLoading;
 
   return (
     <ScrollView
@@ -183,66 +179,6 @@ export default function ProfileScreen() {
           </Card>
 
           <Card>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={[typography.headline, { color: colors.textPrimary }]}>
-                {entitlements.isPro ? 'Anchor Pro' : 'Anchor Free'}
-              </Text>
-              <View
-                style={{
-                  backgroundColor: colors.accentMuted,
-                  paddingHorizontal: spacing.sm,
-                  paddingVertical: 2,
-                  borderRadius: radius.full,
-                }}
-              >
-                <Text style={[typography.caption, { color: colors.accent }]}>
-                  {entitlements.isPro ? 'Pro' : 'Free'}
-                </Text>
-              </View>
-            </View>
-
-            {/* AI usage */}
-            <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs }]}>
-              {aiUsed} of {aiLimit} AI actions used this month
-            </Text>
-            {!entitlements.isPro && remaining <= 3 && remaining > 0 ? (
-              <Text style={[typography.caption, { color: colors.danger, marginTop: 2 }]}>
-                {remaining} {remaining === 1 ? 'action' : 'actions'} left
-              </Text>
-            ) : null}
-            {!entitlements.isPro && remaining === 0 ? (
-              <Text style={[typography.caption, { color: colors.danger, marginTop: 2 }]}>
-                You've used all your AI actions for this month.
-              </Text>
-            ) : null}
-
-            {/* Upgrade / manage */}
-            {entitlements.isPro ? (
-              <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.sm }]}>
-                To manage or cancel your subscription, go to your device's subscription settings.
-              </Text>
-            ) : (
-              <Pressable
-                onPress={() => router.push('/(paywall)')}
-                accessibilityRole="button"
-                accessibilityLabel="Upgrade to Anchor Pro"
-                style={({ pressed }) => ({
-                  marginTop: spacing.md,
-                  backgroundColor: colors.accent,
-                  borderRadius: radius.sm,
-                  paddingVertical: spacing.sm,
-                  alignItems: 'center',
-                  opacity: pressed ? 0.85 : 1,
-                })}
-              >
-                <Text style={[typography.subhead, { color: '#FFFFFF', fontWeight: '600' }]}>
-                  Upgrade to Anchor Pro
-                </Text>
-              </Pressable>
-            )}
-          </Card>
-
-          <Card style={{ marginTop: spacing.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flex: 1, marginRight: spacing.md }}>
                 <Text style={[typography.headline, { color: colors.textPrimary }]}>Task & event reminders</Text>

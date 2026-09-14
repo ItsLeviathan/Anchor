@@ -66,7 +66,7 @@ export default function WelcomeScreen() {
               opacity: pressed ? 0.85 : 1,
             },
           ]}
-          onPress={() => router.replace('/(tabs)/today/index')}
+          onPress={() => router.replace('/(tabs)/today')}
         >
           <Text style={[typography.headline, { color: '#FFFFFF', textAlign: 'center' }]}>
             Get started

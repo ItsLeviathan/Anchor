@@ -101,7 +101,7 @@ export default function SignUpScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Continue without signing in"
-          onPress={() => router.replace('/(tabs)/today/index')}
+          onPress={() => router.replace('/(tabs)/today')}
           style={{ marginTop: spacing.lg }}
         >
           <Text style={[typography.subhead, { color: colors.textTertiary }]}>

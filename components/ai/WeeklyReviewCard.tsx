@@ -1,53 +1,32 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
-import { AiLimitReachedNotice } from './AiLimitReachedNotice';
 import { Card } from '../ui';
-import { AiLimitReachedError, requestWeeklyReview } from '../../features/ai/aiClient';
+import { useExpenses } from '../../features/expenses/useExpenses';
+import { useHabits } from '../../features/habits/useHabits';
+import { useTasks } from '../../features/tasks/useTasks';
+import { computeWeeklyReview } from '../../lib/planning/weeklyReview';
+import { useSession } from '../../lib/supabase/useSession';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 
-type Status = 'idle' | 'loading' | 'done' | 'limit_reached' | 'error';
+type Status = 'idle' | 'done';
 
 export function WeeklyReviewCard() {
   const { colors, spacing, typography } = useTheme();
+  const { session } = useSession();
+  const userId = session?.user.id;
+
+  const { data: tasks = [] } = useTasks(userId);
+  const { data: habits = [] } = useHabits(userId);
+  const { data: expenses = [] } = useExpenses(userId);
+
   const [status, setStatus] = useState<Status>('idle');
   const [summary, setSummary] = useState<string | null>(null);
-  const [limitInfo, setLimitInfo] = useState<{ limit: number; used: number } | null>(null);
 
-  async function handleReview() {
-    setStatus('loading');
-    try {
-      const response = await requestWeeklyReview();
-      setSummary(response.summary);
-      setStatus('done');
-    } catch (err) {
-      if (err instanceof AiLimitReachedError) {
-        setLimitInfo({ limit: err.limit, used: err.used });
-        setStatus('limit_reached');
-      } else {
-        console.error('Weekly review failed', err);
-        setStatus('error');
-      }
-    }
-  }
-
-  if (status === 'limit_reached' && limitInfo) {
-    return (
-      <View style={{ marginBottom: spacing.lg }}>
-        <AiLimitReachedNotice limit={limitInfo.limit} onDismiss={() => setStatus('idle')} />
-      </View>
-    );
-  }
-
-  if (status === 'loading') {
-    return (
-      <Card style={{ marginBottom: spacing.lg, flexDirection: 'row', alignItems: 'center' }}>
-        <ActivityIndicator color={colors.accent} />
-        <Text style={[typography.subhead, { color: colors.textSecondary, marginLeft: spacing.sm }]}>
-          Reviewing your week…
-        </Text>
-      </Card>
-    );
+  function handleReview() {
+    const result = computeWeeklyReview(tasks, habits, expenses);
+    setSummary(result.summary);
+    setStatus('done');
   }
 
   if (status === 'done' && summary) {
@@ -69,9 +48,7 @@ export function WeeklyReviewCard() {
       <Card style={{ marginBottom: spacing.lg }}>
         <Text style={[typography.headline, { color: colors.textPrimary }]}>Weekly review</Text>
         <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs }]}>
-          {status === 'error'
-            ? "Couldn't load your review — tap to try again."
-            : 'A quiet look at how your week went.'}
+          A quiet look at how your week went.
         </Text>
       </Card>
     </Pressable>

@@ -96,10 +96,10 @@ components/
 features/         — Business logic hooks (useTasks, useBills, …) + composers
 lib/
   a11y/           — useReducedMotion
-  ai/             — Edge Function client
+  braindump/      — Rule-based Brain Dump text parsing
   database/       — SQLite schema + helpers
-  entitlements/   — Free vs Pro entitlement layer
   onboarding/     — First-launch flag
+  planning/       — Rule-based Daily Plan / Weekly Review
   query/          — TanStack Query client (with global mutation error handler)
   sync/           — Sync engine
   theme/          — Design tokens + ThemeProvider
@@ -108,7 +108,7 @@ lib/
 
 supabase/
   migrations/     — PostgreSQL schema
-  functions/      — Edge Functions (AI)
+  functions/      — Edge Functions (account deletion, etc.)
 
 widgets/
   ios/            — SwiftUI widget via @expo/ui/swift-ui
@@ -186,9 +186,9 @@ Anchor's visual identity: **minimal · premium · calm · human**
 
 ## Monetization
 
-Anchor uses a freemium model. The entitlement layer lives in `lib/entitlements/`. Free users get core features + 10 AI actions per month. Anchor Pro unlocks advanced AI, insights, widgets, and documents. Subscription state is validated server-side — never trusted from a client boolean.
+Anchor has no paywall or subscription tier right now — every feature is free. Monetization (see `Anchor — Monetization & Subscription Specification.md`) was deliberately removed and is deferred until the app has a meaningful user base.
 
-Pricing is not hard-coded. Product identifiers are managed through Apple App Store Connect and Google Play Console.
+Daily Plan, Weekly Review, and Brain Dump are rule-based (`lib/planning/`, `lib/braindump/`), computed locally from the user's own data — no external AI API, no usage quota.
 
 ---
 

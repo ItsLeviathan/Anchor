@@ -38,7 +38,7 @@ export default function SignInScreen() {
       if (error) {
         toast.error(error.message);
       } else {
-        router.replace('/(tabs)/today/index');
+        router.replace('/(tabs)/today');
       }
     } finally {
       setLoading(false);
@@ -49,7 +49,7 @@ export default function SignInScreen() {
     setSocialLoading('apple');
     try {
       await signInWithApple();
-      router.replace('/(tabs)/today/index');
+      router.replace('/(tabs)/today');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Apple sign-in failed.';
       toast.error(msg);
@@ -62,7 +62,7 @@ export default function SignInScreen() {
     setSocialLoading('google');
     try {
       await signInWithGoogle();
-      router.replace('/(tabs)/today/index');
+      router.replace('/(tabs)/today');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Google sign-in failed.';
       toast.error(msg);

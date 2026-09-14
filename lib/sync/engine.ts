@@ -73,7 +73,6 @@ import {
   upsertLocalAssignment,
 } from '../database/localAssignments';
 import { useSyncStore } from '../../store/useSyncStore';
-import { refreshWidgets } from '../widgets/refreshWidgets';
 import {
   countPending,
   dequeueForEntity,
@@ -316,7 +315,9 @@ export async function flushQueue(): Promise<void> {
     await refreshPendingCount();
     useSyncStore.getState().setSyncing(false);
     isFlushing = false;
-    refreshWidgets().catch((err) => console.error('Widget refresh after flush failed', err));
+    import('../widgets/refreshWidgets').then(({ refreshWidgets }) =>
+      refreshWidgets().catch((err) => console.error('Widget refresh after flush failed', err))
+    );
   }
 }
 

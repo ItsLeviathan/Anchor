@@ -1,5 +1,7 @@
 # ANCHOR — MONETIZATION & SUBSCRIPTION SPECIFICATION
 
+> **Deferred — not currently implemented.** Monetization (paywall, RevenueCat, entitlements, AI usage quota) was removed from the app on 2026-09-15 so every feature is free while the app grows its user base. This document is kept for when it's revisited later — nothing below reflects the app's current state.
+
 ## BUSINESS MODEL
 
 Anchor uses a **freemium model**.

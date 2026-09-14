@@ -2,20 +2,18 @@ import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { AiLimitReachedNotice } from '../../components/ai/AiLimitReachedNotice';
 import { Button, Input, Sheet } from '../../components/ui';
+import { parseBrainDumpText, type BrainDumpParsedItem } from '../../lib/braindump/parse';
 import { useSession } from '../../lib/supabase/useSession';
 import { useTheme } from '../../lib/theme/ThemeProvider';
-import { AiLimitReachedError, requestBrainDump, type BrainDumpItemResult } from '../ai/aiClient';
-import { useRemainingAiActions } from '../ai/useAiUsage';
 import { useCategories } from '../categories/useCategories';
 import { useCreateTask } from '../tasks/useTasks';
 
-interface PreviewItem extends BrainDumpItemResult {
+interface PreviewItem extends BrainDumpParsedItem {
   selected: boolean;
 }
 
-type Status = 'idle' | 'loading' | 'preview' | 'creating' | 'limit_reached' | 'error';
+type Status = 'idle' | 'preview' | 'creating';
 
 export function BrainDumpComposer() {
   const router = useRouter();
@@ -25,13 +23,10 @@ export function BrainDumpComposer() {
 
   const { data: categories = [] } = useCategories(userId);
   const createTask = useCreateTask(userId);
-  const { remaining, isLoading: isUsageLoading } = useRemainingAiActions(userId);
 
   const [text, setText] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [items, setItems] = useState<PreviewItem[]>([]);
-  const [limitInfo, setLimitInfo] = useState<{ limit: number; used: number } | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const categoryIdByName = useMemo(() => {
     const map = new Map<string, string>();
@@ -50,27 +45,12 @@ export function BrainDumpComposer() {
   }, [items]);
 
   const selectedCount = items.filter((item) => item.selected).length;
-  const isBusy = status === 'loading' || status === 'creating';
 
-  async function handleOrganize() {
+  function handleOrganize() {
     if (!text.trim()) return;
-    setStatus('loading');
-    setErrorMessage(null);
-
-    try {
-      const response = await requestBrainDump(text.trim());
-      setItems(response.items.map((item) => ({ ...item, selected: true })));
-      setStatus('preview');
-    } catch (err) {
-      if (err instanceof AiLimitReachedError) {
-        setLimitInfo({ limit: err.limit, used: err.used });
-        setStatus('limit_reached');
-      } else {
-        console.error('Brain dump failed', err);
-        setErrorMessage("We couldn't process that. Check your connection and try again.");
-        setStatus('error');
-      }
-    }
+    const result = parseBrainDumpText(text, categories);
+    setItems(result.items.map((item) => ({ ...item, selected: true })));
+    setStatus('preview');
   }
 
   function toggleItem(index: number) {
@@ -97,46 +77,26 @@ export function BrainDumpComposer() {
   return (
     <Sheet>
       <ScrollView keyboardShouldPersistTaps="handled">
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={[typography.title, { color: colors.textPrimary }]}>Brain Dump</Text>
-          {!isUsageLoading && (status === 'idle' || status === 'error') ? (
-            <Text style={[typography.caption, { color: colors.textTertiary }]}>{remaining} left this month</Text>
-          ) : null}
-        </View>
+        <Text style={[typography.title, { color: colors.textPrimary }]}>Brain Dump</Text>
 
-        {status === 'idle' || status === 'loading' || status === 'error' ? (
+        {status === 'idle' ? (
           <>
             <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.md }]}>
-              Write down everything on your mind. Don't organize it — just write.
+              Write one thing per line. We'll group them by category.
             </Text>
             <Input
               multiline
               numberOfLines={6}
               textAlignVertical="top"
-              placeholder="I need to finish my thesis, buy groceries, pay the electricity bill Monday..."
+              placeholder={'Finish thesis\nBuy groceries\nPay the electricity bill'}
               value={text}
               onChangeText={setText}
-              editable={status !== 'loading'}
               style={{ minHeight: 140 }}
             />
-            {errorMessage ? (
-              <Text style={[typography.subhead, { color: colors.danger, marginTop: spacing.sm }]}>{errorMessage}</Text>
-            ) : null}
             <View style={{ marginTop: spacing.lg }}>
-              <Button
-                label={status === 'loading' ? 'Organizing…' : 'Organize this'}
-                onPress={handleOrganize}
-                disabled={!text.trim() || isBusy}
-                loading={status === 'loading'}
-              />
+              <Button label="Organize this" onPress={handleOrganize} disabled={!text.trim()} />
             </View>
           </>
-        ) : null}
-
-        {status === 'limit_reached' && limitInfo ? (
-          <View style={{ marginTop: spacing.md }}>
-            <AiLimitReachedNotice limit={limitInfo.limit} onDismiss={() => router.back()} />
-          </View>
         ) : null}
 
         {(status === 'preview' || status === 'creating') && items.length > 0 ? (
