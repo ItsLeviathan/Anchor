@@ -1,5 +1,6 @@
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card } from '../../../components/ui';
@@ -88,6 +89,49 @@ export default function ProfileScreen() {
             <Text style={[typography.caption, { color: cached ? colors.success : colors.textTertiary, marginTop: spacing.xs }]}>
               {cached ? 'Cached locally — available offline' : 'Caching locally…'}
             </Text>
+
+            {session?.user.is_anonymous ? (
+              <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Create account"
+                  accessibilityHint="Opens the sign up screen to save and sync your data"
+                  onPress={() => router.push('/(onboarding)/sign-up')}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    alignItems: 'center',
+                    backgroundColor: colors.accent,
+                    borderRadius: radius.sm,
+                    paddingVertical: spacing.sm,
+                    opacity: pressed ? 0.85 : 1,
+                  })}
+                >
+                  <Text style={[typography.subhead, { color: '#FFFFFF', fontWeight: '600' }]}>
+                    Create account
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign in"
+                  accessibilityHint="Opens the sign in screen"
+                  onPress={() => router.push('/(onboarding)/sign-in')}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    alignItems: 'center',
+                    backgroundColor: colors.surfaceElevated,
+                    borderRadius: radius.sm,
+                    paddingVertical: spacing.sm,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={[typography.subhead, { color: colors.textPrimary, fontWeight: '600' }]}>
+                    Sign in
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
           </Card>
 
           <Card>

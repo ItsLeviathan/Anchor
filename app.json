@@ -1,14 +1,22 @@
 {
   "expo": {
-    "name": "anchor",
+    "name": "Anchor",
     "slug": "anchor",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "anchor",
     "userInterfaceStyle": "automatic",
+    "description": "Keep your life together. Tasks, calendar, bills, habits, documents, and notes — all in one calm place.",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.anchor.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Anchor uses the camera to scan and save documents.",
+        "NSPhotoLibraryUsageDescription": "Anchor accesses your photo library to attach images to documents and notes.",
+        "NSFaceIDUsageDescription": "Anchor uses Face ID to protect your private data."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,7 +26,14 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.anchor"
+      "package": "com.anchor.app",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -12,7 +12,7 @@ interface DocumentListItemProps {
   onDelete: (document: AnchorDocument) => void;
 }
 
-export function DocumentListItem({ document, onDelete }: DocumentListItemProps) {
+export const DocumentListItem = React.memo(function DocumentListItem({ document, onDelete }: DocumentListItemProps) {
   const { colors, spacing, radius, typography } = useTheme();
   const [isOpening, setIsOpening] = useState(false);
 
@@ -35,6 +35,10 @@ export function DocumentListItem({ document, onDelete }: DocumentListItemProps) 
 
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${document.name}`}
+      accessibilityHint="Opens this document in your browser or viewer"
+      accessibilityState={{ busy: isOpening }}
       onPress={handleOpen}
       disabled={isOpening}
       style={{
@@ -55,9 +59,15 @@ export function DocumentListItem({ document, onDelete }: DocumentListItemProps) 
           {label ? ` · ${label}` : ''}
         </Text>
       </View>
-      <Pressable accessibilityLabel="Delete document" onPress={() => onDelete(document)} hitSlop={8}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Delete document"
+        accessibilityHint="Permanently removes this document"
+        onPress={() => onDelete(document)}
+        hitSlop={8}
+      >
         <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
       </Pressable>
     </Pressable>
   );
-}
+});

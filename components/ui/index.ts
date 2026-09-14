@@ -1,6 +1,9 @@
 export { Button } from './Button';
 export { Card } from './Card';
 export { EmptyState } from './EmptyState';
+export { ErrorBoundary } from './ErrorBoundary';
+export { FadeInView } from './FadeInView';
 export { Input } from './Input';
 export { Sheet } from './Sheet';
 export { SyncStatusBadge } from './SyncStatusBadge';
+export { ToastContainer } from './Toast';

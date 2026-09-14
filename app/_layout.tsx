@@ -1,17 +1,18 @@
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initDatabase } from '../lib/database/db';
 import '../lib/notifications/setup';
+import { getOnboardingComplete, setOnboardingComplete } from '../lib/onboarding/onboarding';
 import { useSession } from '../lib/supabase/useSession';
 import { useSyncLifecycle } from '../lib/sync/useSyncLifecycle';
 import { AppProviders } from '../providers/AppProviders';
 
 export default function RootLayout() {
   const [isDbReady, setIsDbReady] = useState(false);
-  const { session } = useSession();
+  const { session, isLoading: isSessionLoading } = useSession();
 
   useEffect(() => {
     initDatabase()
@@ -19,9 +20,20 @@ export default function RootLayout() {
       .catch((err) => console.error('Failed to initialize local database', err));
   }, []);
 
-  // Don't touch local_tasks/local_events/etc. before initDatabase has
-  // actually created them - passing undefined here keeps the lifecycle
-  // hook a no-op until then.
+  useEffect(() => {
+    if (isSessionLoading) return;
+
+    async function checkOnboarding() {
+      const done = await getOnboardingComplete();
+      if (!done) {
+        await setOnboardingComplete();
+        router.replace('/(onboarding)/welcome');
+      }
+    }
+
+    checkOnboarding().catch((err) => console.error('Onboarding check failed', err));
+  }, [isSessionLoading]);
+
   useSyncLifecycle(isDbReady ? session?.user.id : undefined);
 
   return (
@@ -30,6 +42,7 @@ export default function RootLayout() {
         <AppProviders>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="(onboarding)" options={{ animation: 'fade' }} />
             <Stack.Screen name="add-sheet" options={{ presentation: 'modal' }} />
             <Stack.Screen name="task-new" options={{ presentation: 'modal' }} />
             <Stack.Screen name="event-new" options={{ presentation: 'modal' }} />

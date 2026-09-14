@@ -9,9 +9,10 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
   label: string;
   variant?: ButtonVariant;
   loading?: boolean;
+  hint?: string;
 }
 
-export function Button({ label, variant = 'primary', loading, disabled, ...props }: ButtonProps) {
+export function Button({ label, variant = 'primary', loading, disabled, hint, ...props }: ButtonProps) {
   const { colors, spacing, radius, typography } = useTheme();
 
   const backgroundColor =
@@ -22,7 +23,9 @@ export function Button({ label, variant = 'primary', loading, disabled, ...props
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading }}
+      accessibilityLabel={label}
+      accessibilityHint={hint}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.base,

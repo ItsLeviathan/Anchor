@@ -20,7 +20,7 @@ function formatDueLabel(dueDate: string): string {
   return isOverdue ? `Overdue · ${label}` : `Due ${label}`;
 }
 
-export function BillListItem({ bill, onMarkPaid, onDelete }: BillListItemProps) {
+export const BillListItem = React.memo(function BillListItem({ bill, onMarkPaid, onDelete }: BillListItemProps) {
   const { colors, spacing, radius, typography } = useTheme();
   const isPaid = bill.status === 'paid';
 
@@ -38,6 +38,7 @@ export function BillListItem({ bill, onMarkPaid, onDelete }: BillListItemProps) 
         accessibilityRole="checkbox"
         accessibilityState={{ checked: isPaid }}
         accessibilityLabel={isPaid ? 'Paid' : 'Mark as paid'}
+        accessibilityHint={isPaid ? 'This bill is already paid' : 'Records this bill as paid and logs an expense'}
         onPress={() => !isPaid && onMarkPaid(bill)}
         style={{
           width: 22,
@@ -75,9 +76,15 @@ export function BillListItem({ bill, onMarkPaid, onDelete }: BillListItemProps) 
         {bill.currency} {bill.amount.toFixed(2)}
       </Text>
 
-      <Pressable accessibilityLabel="Delete bill" onPress={() => onDelete(bill)} hitSlop={8}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Delete bill"
+        accessibilityHint="Permanently removes this bill"
+        onPress={() => onDelete(bill)}
+        hitSlop={8}
+      >
         <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
       </Pressable>
     </View>
   );
-}
+});

@@ -3,6 +3,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
+import { FadeInView } from '../ui/FadeInView';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import { formatDueLabel } from '../../lib/tasks/formatDueLabel';
 import { isOverdue } from '../../lib/tasks/prioritization';
@@ -16,7 +17,7 @@ interface TaskRowProps {
   onDelete: (task: Task) => void;
 }
 
-export function TaskRow({ task, categoryColor, highlighted, onComplete, onDelete }: TaskRowProps) {
+function TaskRowInner({ task, categoryColor, highlighted, onComplete, onDelete }: TaskRowProps) {
   const { colors, spacing, radius, typography } = useTheme();
   const swipeableRef = React.useRef<React.ComponentRef<typeof ReanimatedSwipeable>>(null);
   const overdue = isOverdue(task);
@@ -39,6 +40,7 @@ export function TaskRow({ task, categoryColor, highlighted, onComplete, onDelete
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Complete task"
+          accessibilityHint="Marks this task as done"
           onPress={() => {
             swipeableRef.current?.close();
             onComplete(task);
@@ -52,6 +54,7 @@ export function TaskRow({ task, categoryColor, highlighted, onComplete, onDelete
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Delete task"
+          accessibilityHint="Permanently removes this task"
           onPress={() => {
             swipeableRef.current?.close();
             onDelete(task);
@@ -78,6 +81,7 @@ export function TaskRow({ task, categoryColor, highlighted, onComplete, onDelete
           accessibilityRole="checkbox"
           accessibilityState={{ checked: isCompleted }}
           accessibilityLabel={isCompleted ? 'Mark as not done' : 'Mark as done'}
+          accessibilityHint={isCompleted ? 'Reopens this task' : 'Completes this task'}
           onPress={() => onComplete(task)}
           style={[
             styles.checkbox,
@@ -120,6 +124,14 @@ export function TaskRow({ task, categoryColor, highlighted, onComplete, onDelete
     </ReanimatedSwipeable>
   );
 }
+
+export const TaskRow = React.memo(function TaskRow(props: TaskRowProps) {
+  return (
+    <FadeInView>
+      <TaskRowInner {...props} />
+    </FadeInView>
+  );
+});
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },

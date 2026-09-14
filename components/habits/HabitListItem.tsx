@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { FadeInView } from '../ui/FadeInView';
 import { computeStreak, isCompletedToday } from '../../lib/habits/streak';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { Habit } from '../../types';
@@ -12,7 +13,7 @@ interface HabitListItemProps {
   onDelete?: (habit: Habit) => void;
 }
 
-export function HabitListItem({ habit, onToggleToday, onDelete }: HabitListItemProps) {
+function HabitListItemInner({ habit, onToggleToday, onDelete }: HabitListItemProps) {
   const { colors, spacing, radius, typography } = useTheme();
   const done = isCompletedToday(habit);
   const streak = computeStreak(habit);
@@ -32,6 +33,7 @@ export function HabitListItem({ habit, onToggleToday, onDelete }: HabitListItemP
         accessibilityRole="checkbox"
         accessibilityState={{ checked: done }}
         accessibilityLabel={done ? 'Completed today' : 'Mark done today'}
+        accessibilityHint={done ? 'Marks this habit as not done' : 'Records a completion for today'}
         onPress={() => onToggleToday(habit)}
         style={{
           width: 28,
@@ -57,10 +59,24 @@ export function HabitListItem({ habit, onToggleToday, onDelete }: HabitListItemP
       </View>
 
       {onDelete ? (
-        <Pressable accessibilityLabel="Delete habit" onPress={() => onDelete(habit)} hitSlop={8}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Delete habit"
+          accessibilityHint="Permanently removes this habit"
+          onPress={() => onDelete(habit)}
+          hitSlop={8}
+        >
           <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
         </Pressable>
       ) : null}
     </View>
   );
 }
+
+export const HabitListItem = React.memo(function HabitListItem(props: HabitListItemProps) {
+  return (
+    <FadeInView>
+      <HabitListItemInner {...props} />
+    </FadeInView>
+  );
+});

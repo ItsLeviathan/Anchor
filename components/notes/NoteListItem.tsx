@@ -11,7 +11,7 @@ interface NoteListItemProps {
   onDelete: (note: Note) => void;
 }
 
-export function NoteListItem({ note, onTogglePin, onDelete }: NoteListItemProps) {
+export const NoteListItem = React.memo(function NoteListItem({ note, onTogglePin, onDelete }: NoteListItemProps) {
   const { colors, spacing, radius, typography } = useTheme();
 
   return (
@@ -36,18 +36,30 @@ export function NoteListItem({ note, onTogglePin, onDelete }: NoteListItemProps)
           ) : null}
         </View>
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <Pressable accessibilityLabel={note.isPinned ? 'Unpin note' : 'Pin note'} onPress={() => onTogglePin(note)} hitSlop={8}>
+          <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={note.isPinned ? 'Unpin note' : 'Pin note'}
+              accessibilityHint={note.isPinned ? 'Removes the pin from this note' : 'Pins this note to the top'}
+              onPress={() => onTogglePin(note)}
+              hitSlop={8}
+            >
             <Ionicons
               name={note.isPinned ? 'bookmark' : 'bookmark-outline'}
               size={18}
               color={note.isPinned ? colors.accent : colors.textTertiary}
             />
           </Pressable>
-          <Pressable accessibilityLabel="Delete note" onPress={() => onDelete(note)} hitSlop={8}>
+          <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Delete note"
+              accessibilityHint="Permanently removes this note"
+              onPress={() => onDelete(note)}
+              hitSlop={8}
+            >
             <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
           </Pressable>
         </View>
       </View>
     </View>
   );
-}
+});

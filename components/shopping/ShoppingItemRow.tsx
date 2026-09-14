@@ -11,7 +11,7 @@ interface ShoppingItemRowProps {
   onRemove: (item: ShoppingItem) => void;
 }
 
-export function ShoppingItemRow({ item, onToggle, onRemove }: ShoppingItemRowProps) {
+export const ShoppingItemRow = React.memo(function ShoppingItemRow({ item, onToggle, onRemove }: ShoppingItemRowProps) {
   const { colors, spacing, typography } = useTheme();
 
   return (
@@ -19,6 +19,8 @@ export function ShoppingItemRow({ item, onToggle, onRemove }: ShoppingItemRowPro
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: item.isCompleted }}
+        accessibilityLabel={item.isCompleted ? 'Remove from cart' : 'Add to cart'}
+        accessibilityHint={item.isCompleted ? 'Marks this item as not yet collected' : 'Marks this item as collected'}
         onPress={() => onToggle(item)}
         style={{
           width: 20,
@@ -48,9 +50,15 @@ export function ShoppingItemRow({ item, onToggle, onRemove }: ShoppingItemRowPro
         {item.name}
         {item.quantity ? ` · ${item.quantity}` : ''}
       </Text>
-      <Pressable accessibilityLabel="Remove item" onPress={() => onRemove(item)} hitSlop={8}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Remove item"
+        accessibilityHint="Removes this item from the shopping list"
+        onPress={() => onRemove(item)}
+        hitSlop={8}
+      >
         <Ionicons name="close" size={16} color={colors.textTertiary} />
       </Pressable>
     </View>
   );
-}
+});

@@ -10,7 +10,7 @@ interface CategorySummaryRowProps {
   onPress?: () => void;
 }
 
-export function CategorySummaryRow({ name, color, count, onPress }: CategorySummaryRowProps) {
+export const CategorySummaryRow = React.memo(function CategorySummaryRow({ name, color, count, onPress }: CategorySummaryRowProps) {
   const { colors, spacing, typography } = useTheme();
 
   return (
@@ -26,7 +26,7 @@ export function CategorySummaryRow({ name, color, count, onPress }: CategorySumm
       </Text>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },

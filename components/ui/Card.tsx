@@ -3,7 +3,7 @@ import { StyleSheet, View, type ViewProps } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
 
-export function Card({ style, ...props }: ViewProps) {
+export const Card = React.memo(function Card({ style, ...props }: ViewProps) {
   const { colors, spacing, radius } = useTheme();
 
   return (
@@ -21,4 +21,4 @@ export function Card({ style, ...props }: ViewProps) {
       {...props}
     />
   );
-}
+});
