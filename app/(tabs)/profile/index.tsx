@@ -4,19 +4,21 @@ import { ActivityIndicator, Pressable, ScrollView, Switch, Text, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card } from '../../../components/ui';
+import { useRemainingAiActions } from '../../../features/ai/useAiUsage';
+import { useSetStudentMode, useStudentMode } from '../../../features/studentMode/useStudentMode';
 import { cacheProfile, getCachedProfile, type CachedProfile } from '../../../lib/database/db';
 import { useEntitlements } from '../../../lib/entitlements/useEntitlements';
-import { areRemindersEnabled, setRemindersEnabled } from '../../../lib/notifications/preferences';
 import { arePersonalizedSuggestionsEnabled, setPersonalizedSuggestionsEnabled } from '../../../lib/insights/preferences';
+import { areRemindersEnabled, setRemindersEnabled } from '../../../lib/notifications/preferences';
 import { useSession } from '../../../lib/supabase/useSession';
 import { useTheme } from '../../../lib/theme/ThemeProvider';
-import { useSetStudentMode, useStudentMode } from '../../../features/studentMode/useStudentMode';
 
 export default function ProfileScreen() {
   const { colors, spacing, typography, radius } = useTheme();
   const insets = useSafeAreaInsets();
   const { session, isLoading: isSessionLoading } = useSession();
   const { entitlements, isLoading: isEntitlementsLoading } = useEntitlements(session?.user.id);
+  const { remaining, limit: aiLimit, used: aiUsed, isLoading: isAiUsageLoading } = useRemainingAiActions(session?.user.id);
   const { data: studentModeOn = false, isLoading: isStudentModeLoading } = useStudentMode(session?.user.id);
   const setStudentMode = useSetStudentMode(session?.user.id);
   const [cached, setCached] = useState<CachedProfile | null>(null);
@@ -66,7 +68,7 @@ export default function ProfileScreen() {
       .catch((err) => console.error('Local profile cache failed', err));
   }, [session]);
 
-  const isLoading = isSessionLoading || isEntitlementsLoading || isStudentModeLoading;
+  const isLoading = isSessionLoading || isEntitlementsLoading || isStudentModeLoading || isAiUsageLoading;
 
   return (
     <ScrollView
@@ -152,9 +154,46 @@ export default function ProfileScreen() {
                 </Text>
               </View>
             </View>
+
+            {/* AI usage */}
             <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs }]}>
-              {entitlements.aiMonthlyLimit} AI actions per month
+              {aiUsed} of {aiLimit} AI actions used this month
             </Text>
+            {!entitlements.isPro && remaining <= 3 && remaining > 0 ? (
+              <Text style={[typography.caption, { color: colors.danger, marginTop: 2 }]}>
+                {remaining} {remaining === 1 ? 'action' : 'actions'} left
+              </Text>
+            ) : null}
+            {!entitlements.isPro && remaining === 0 ? (
+              <Text style={[typography.caption, { color: colors.danger, marginTop: 2 }]}>
+                You've used all your AI actions for this month.
+              </Text>
+            ) : null}
+
+            {/* Upgrade / manage */}
+            {entitlements.isPro ? (
+              <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.sm }]}>
+                To manage or cancel your subscription, go to your device's subscription settings.
+              </Text>
+            ) : (
+              <Pressable
+                onPress={() => router.push('/(paywall)')}
+                accessibilityRole="button"
+                accessibilityLabel="Upgrade to Anchor Pro"
+                style={({ pressed }) => ({
+                  marginTop: spacing.md,
+                  backgroundColor: colors.accent,
+                  borderRadius: radius.sm,
+                  paddingVertical: spacing.sm,
+                  alignItems: 'center',
+                  opacity: pressed ? 0.85 : 1,
+                })}
+              >
+                <Text style={[typography.subhead, { color: '#FFFFFF', fontWeight: '600' }]}>
+                  Upgrade to Anchor Pro
+                </Text>
+              </Pressable>
+            )}
           </Card>
 
           <Card style={{ marginTop: spacing.md }}>

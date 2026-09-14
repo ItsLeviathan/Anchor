@@ -1,17 +1,9 @@
-import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
+import React from 'react';
 import { Text, View } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import { Button, Card } from '../ui';
-
-const PRO_PERKS = [
-  'Advanced AI Brain Dump & task extraction',
-  'AI task breakdown and daily planning',
-  'AI weekly reviews',
-  'Advanced insights',
-  'Multiple calendars',
-  'Expanded document storage',
-];
 
 interface AiLimitReachedNoticeProps {
   limit: number;
@@ -19,8 +11,13 @@ interface AiLimitReachedNoticeProps {
 }
 
 export function AiLimitReachedNotice({ limit, onDismiss }: AiLimitReachedNoticeProps) {
+  const router = useRouter();
   const { colors, spacing, typography } = useTheme();
-  const [showPerks, setShowPerks] = useState(false);
+
+  function handleUpgrade() {
+    onDismiss();
+    router.push('/(paywall)');
+  }
 
   return (
     <Card>
@@ -28,33 +25,18 @@ export function AiLimitReachedNotice({ limit, onDismiss }: AiLimitReachedNoticeP
         You've used your {limit} AI actions this month
       </Text>
       <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs }]}>
-        Your tasks, calendar, notes, and reminders are still fully available. AI assistance picks back up next
-        month.
+        Your tasks, calendar, notes, and reminders are still fully available.
       </Text>
-
-      {showPerks ? (
-        <View style={{ marginTop: spacing.md }}>
-          {PRO_PERKS.map((perk) => (
-            <Text key={perk} style={[typography.subhead, { color: colors.textSecondary, marginTop: 4 }]}>
-              • {perk}
-            </Text>
-          ))}
-          <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.sm }]}>
-            Anchor Pro isn't available to purchase yet in this build.
-          </Text>
-        </View>
-      ) : null}
+      <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs }]}>
+        Upgrade to Anchor Pro for expanded AI assistance.
+      </Text>
 
       <View style={{ flexDirection: 'row', marginTop: spacing.md, gap: spacing.sm }}>
         <View style={{ flex: 1 }}>
           <Button label="Maybe later" variant="secondary" onPress={onDismiss} />
         </View>
         <View style={{ flex: 1 }}>
-          <Button
-            label={showPerks ? 'Hide details' : 'Explore Anchor Pro'}
-            variant="ghost"
-            onPress={() => setShowPerks((prev) => !prev)}
-          />
+          <Button label="Upgrade to Pro" onPress={handleUpgrade} />
         </View>
       </View>
     </Card>
