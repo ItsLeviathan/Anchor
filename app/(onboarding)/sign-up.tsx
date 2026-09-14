@@ -37,10 +37,17 @@ export default function SignUpScreen() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-      });
+      // If the user is currently signed in anonymously, upgrade them in-place
+      // using updateUser — this keeps their existing user ID so all their
+      // locally-created data (tasks, notes, etc.) is automatically preserved.
+      // A regular signUp would create a NEW user ID and leave orphaned data.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const isAnonymous = sessionData.session?.user.is_anonymous ?? false;
+
+      const { error } = isAnonymous
+        ? await supabase.auth.updateUser({ email: email.trim(), password })
+        : await supabase.auth.signUp({ email: email.trim(), password });
+
       if (error) {
         toast.error(error.message);
       } else {

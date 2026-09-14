@@ -1,5 +1,7 @@
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CategorySummaryRow } from '../../../components/categories/CategorySummaryRow';
@@ -110,7 +112,15 @@ export default function TodayScreen() {
     >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <Text style={[typography.largeTitle, { color: colors.textPrimary }]}>{getGreeting()}</Text>
-        <View style={{ marginTop: spacing.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs, gap: spacing.sm }}>
+          <Pressable
+            onPress={() => router.push('/search')}
+            accessibilityRole="button"
+            accessibilityLabel="Search"
+            hitSlop={10}
+          >
+            <Ionicons name="search" size={22} color={colors.textSecondary} />
+          </Pressable>
           <SyncStatusBadge />
         </View>
       </View>

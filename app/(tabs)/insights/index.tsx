@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StatRow } from '../../../components/insights/StatRow';
+import { WeeklyReviewCard } from '../../../components/ai/WeeklyReviewCard';
 import { Card, EmptyState } from '../../../components/ui';
 import { useCategories } from '../../../features/categories/useCategories';
 import { useEvents } from '../../../features/events/useEvents';
@@ -71,6 +72,8 @@ export default function InsightsScreen() {
         <ActivityIndicator color={colors.accent} />
       ) : (
         <>
+          <WeeklyReviewCard />
+
           {/* ---------- Productivity ---------- */}
           <Text style={[typography.headline, { color: colors.textPrimary, marginBottom: spacing.sm }]}>
             Productivity

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card } from '../../../components/ui';
@@ -10,8 +10,12 @@ import { cacheProfile, getCachedProfile, type CachedProfile } from '../../../lib
 import { useEntitlements } from '../../../lib/entitlements/useEntitlements';
 import { arePersonalizedSuggestionsEnabled, setPersonalizedSuggestionsEnabled } from '../../../lib/insights/preferences';
 import { areRemindersEnabled, setRemindersEnabled } from '../../../lib/notifications/preferences';
+import { isBiometricAvailable, setAppLockEnabled } from '../../../lib/security/appLock';
+import { useAppLock } from '../../../lib/security/useAppLock';
+import { supabase } from '../../../lib/supabase/client';
 import { useSession } from '../../../lib/supabase/useSession';
 import { useTheme } from '../../../lib/theme/ThemeProvider';
+import { toast } from '../../../lib/toast/toast';
 
 export default function ProfileScreen() {
   const { colors, spacing, typography, radius } = useTheme();
@@ -24,6 +28,9 @@ export default function ProfileScreen() {
   const [cached, setCached] = useState<CachedProfile | null>(null);
   const [remindersOn, setRemindersOn] = useState(true);
   const [personalizedSuggestionsOn, setPersonalizedSuggestionsOn] = useState(true);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const { lockEnabled } = useAppLock();
 
   useEffect(() => {
     areRemindersEnabled()
@@ -32,6 +39,9 @@ export default function ProfileScreen() {
     arePersonalizedSuggestionsEnabled()
       .then(setPersonalizedSuggestionsOn)
       .catch((err) => console.error('Failed to load personalization preference', err));
+    isBiometricAvailable()
+      .then(setBiometricAvailable)
+      .catch(() => setBiometricAvailable(false));
   }, []);
 
   async function handleToggleReminders(value: boolean) {
@@ -52,6 +62,42 @@ export default function ProfileScreen() {
       console.error('Failed to save personalization preference', err);
       setPersonalizedSuggestionsOn(!value);
     }
+  }
+
+  async function handleToggleAppLock(value: boolean) {
+    try {
+      await setAppLockEnabled(value);
+    } catch (err) {
+      console.error('Failed to save app lock preference', err);
+    }
+  }
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      'Delete account',
+      'This permanently deletes your account and all your data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeletingAccount(true);
+            try {
+              const { error } = await supabase.functions.invoke('delete-account');
+              if (error) throw error;
+              await supabase.auth.signOut();
+              router.replace('/(onboarding)/welcome');
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : 'Failed to delete account.';
+              toast.error(msg);
+            } finally {
+              setIsDeletingAccount(false);
+            }
+          },
+        },
+      ]
+    );
   }
 
   useEffect(() => {
@@ -243,6 +289,45 @@ export default function ProfileScreen() {
               />
             </View>
           </Card>
+
+          {biometricAvailable ? (
+            <Card style={{ marginTop: spacing.md }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1, marginRight: spacing.md }}>
+                  <Text style={[typography.headline, { color: colors.textPrimary }]}>App lock</Text>
+                  <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
+                    Require biometric or passcode to open Anchor
+                  </Text>
+                </View>
+                <Switch
+                  value={lockEnabled}
+                  onValueChange={handleToggleAppLock}
+                  trackColor={{ true: colors.accent, false: colors.border }}
+                />
+              </View>
+            </Card>
+          ) : null}
+
+          {session && !session.user.is_anonymous ? (
+            <Card style={{ marginTop: spacing.md }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Delete account"
+                onPress={handleDeleteAccount}
+                disabled={isDeletingAccount}
+                style={({ pressed }) => ({ opacity: pressed || isDeletingAccount ? 0.6 : 1 })}
+              >
+                <Text style={[typography.headline, { color: colors.danger }]}>
+                  {isDeletingAccount ? 'Deleting…' : 'Delete account'}
+                </Text>
+                <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
+                  Permanently deletes your account and all data
+                </Text>
+              </Pressable>
+            </Card>
+          ) : null}
+
+          <View style={{ height: insets.bottom + spacing.xl }} />
         </>
       )}
     </ScrollView>

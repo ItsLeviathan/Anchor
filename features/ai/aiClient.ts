@@ -81,3 +81,51 @@ export async function requestDailyPlan(): Promise<DailyPlanResponse> {
     dayEndIso: dayEnd.toISOString(),
   });
 }
+
+export interface WeeklyReviewResponse {
+  summary: string;
+  remaining: number;
+}
+
+export async function requestWeeklyReview(): Promise<WeeklyReviewResponse> {
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - 7);
+  weekStart.setHours(0, 0, 0, 0);
+
+  return invokeAiAssist<WeeklyReviewResponse>({
+    action: 'weekly_review',
+    todayIso: toDatePart(now),
+    weekStartIso: weekStart.toISOString(),
+  });
+}
+
+export interface NoteAiSummarizeResponse {
+  summary: string;
+  remaining: number;
+}
+
+export interface NoteAiExtractResponse {
+  tasks: string[];
+  remaining: number;
+}
+
+export async function requestNoteSummary(noteId: string): Promise<NoteAiSummarizeResponse> {
+  return invokeAiAssist<NoteAiSummarizeResponse>({ action: 'note_ai', noteId, noteAction: 'summarize' });
+}
+
+export async function requestNoteTaskExtraction(noteId: string): Promise<NoteAiExtractResponse> {
+  return invokeAiAssist<NoteAiExtractResponse>({ action: 'note_ai', noteId, noteAction: 'extract_tasks' });
+}
+
+export interface TaskBreakdownResponse {
+  subtasks: string[];
+  remaining: number;
+}
+
+export async function requestTaskBreakdown(
+  taskTitle: string,
+  taskDescription?: string
+): Promise<TaskBreakdownResponse> {
+  return invokeAiAssist<TaskBreakdownResponse>({ action: 'task_breakdown', taskTitle, taskDescription });
+}

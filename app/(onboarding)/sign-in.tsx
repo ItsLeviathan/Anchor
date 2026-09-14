@@ -12,9 +12,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '../../components/ui';
 import { Input } from '../../components/ui';
+import { isAppleSignInAvailable, signInWithApple, signInWithGoogle } from '../../lib/auth/socialAuth';
+import { supabase } from '../../lib/supabase/client';
 import { toast } from '../../lib/toast/toast';
 import { useTheme } from '../../lib/theme/ThemeProvider';
-import { supabase } from '../../lib/supabase/client';
 
 export default function SignInScreen() {
   const { colors, spacing, typography, radius } = useTheme();
@@ -23,6 +24,7 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<'apple' | 'google' | null>(null);
 
   async function handleSignIn() {
     if (!email.trim() || !password) {
@@ -40,6 +42,32 @@ export default function SignInScreen() {
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleAppleSignIn() {
+    setSocialLoading('apple');
+    try {
+      await signInWithApple();
+      router.replace('/(tabs)/today/index');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Apple sign-in failed.';
+      toast.error(msg);
+    } finally {
+      setSocialLoading(null);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setSocialLoading('google');
+    try {
+      await signInWithGoogle();
+      router.replace('/(tabs)/today/index');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Google sign-in failed.';
+      toast.error(msg);
+    } finally {
+      setSocialLoading(null);
     }
   }
 
@@ -113,6 +141,62 @@ export default function SignInScreen() {
             onPress={handleSignIn}
             hint="Signs you in to your Anchor account"
           />
+        </View>
+
+        <View style={{ marginTop: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+          <Text style={[typography.caption, { color: colors.textTertiary }]}>or</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+        </View>
+
+        <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
+          {isAppleSignInAvailable() && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Sign in with Apple"
+              onPress={handleAppleSignIn}
+              disabled={socialLoading !== null}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.surface,
+                borderRadius: radius.md,
+                borderWidth: 1,
+                borderColor: colors.border,
+                paddingVertical: spacing.sm + 2,
+                gap: spacing.sm,
+                opacity: socialLoading === 'apple' ? 0.6 : 1,
+              }}
+            >
+              <Text style={[typography.subhead, { color: colors.textPrimary }]}>
+                {socialLoading === 'apple' ? 'Signing in…' : ' Sign in with Apple'}
+              </Text>
+            </Pressable>
+          )}
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Sign in with Google"
+            onPress={handleGoogleSignIn}
+            disabled={socialLoading !== null}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: colors.surface,
+              borderRadius: radius.md,
+              borderWidth: 1,
+              borderColor: colors.border,
+              paddingVertical: spacing.sm + 2,
+              gap: spacing.sm,
+              opacity: socialLoading === 'google' ? 0.6 : 1,
+            }}
+          >
+            <Text style={[typography.subhead, { color: colors.textPrimary }]}>
+              {socialLoading === 'google' ? 'Signing in…' : 'G  Sign in with Google'}
+            </Text>
+          </Pressable>
         </View>
 
         <Pressable
