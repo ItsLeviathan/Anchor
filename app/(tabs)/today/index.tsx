@@ -164,7 +164,13 @@ export default function TodayScreen() {
               </View>
             </View>
           ) : (
-            <EmptyState message="Nothing demanding your attention yet." />
+            <EmptyState
+              icon="checkmark-circle-outline"
+              title="Nothing due today"
+              message="Add something to your day and Anchor will keep it organized."
+              actionLabel="Add task"
+              onAction={() => router.push('/task-new')}
+            />
           )}
 
           {dueHabits.length > 0 ? (

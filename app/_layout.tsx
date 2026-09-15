@@ -1,17 +1,28 @@
 import { router, Stack } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
+import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { BootstrapScreen } from '../components/bootstrap/BootstrapScreen';
 import { LockScreen } from '../components/security/LockScreen';
-import { initDatabase } from '../lib/database/db';
+import { useBootstrap } from '../lib/bootstrap/useBootstrap';
 import '../lib/notifications/setup';
 import { getOnboardingComplete, setOnboardingComplete } from '../lib/onboarding/onboarding';
 import { useAppLock } from '../lib/security/useAppLock';
 import { useSession } from '../lib/supabase/useSession';
 import { useSyncLifecycle } from '../lib/sync/useSyncLifecycle';
 import { AppProviders } from '../providers/AppProviders';
+
+// Keep the native splash up until bootstrap explicitly hides it below —
+// otherwise Expo hides it as soon as the first frame renders, which for a
+// startup-gated app would be the loading screen itself, not the real app.
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Safe to ignore: this only fails if the splash module isn't available in
+  // the current runtime (e.g. Expo Go on an unsupported platform), in which
+  // case there's nothing to keep hidden anyway.
+});
 
 function AppContent() {
   const { isLocked, unlock, isAuthenticating, lastError } = useAppLock();
@@ -45,15 +56,13 @@ function AppContent() {
   );
 }
 
-export default function RootLayout() {
-  const [isDbReady, setIsDbReady] = useState(false);
+// Owns everything that depends on a restored session: the once-per-install
+// onboarding redirect and the sync lifecycle. Only mounted once bootstrap
+// has resolved, so `useSession()` here already has its final value on its
+// very first render — no "unauthenticated flashes, then authenticated"
+// flicker.
+function BootstrappedApp() {
   const { session, isLoading: isSessionLoading } = useSession();
-
-  useEffect(() => {
-    initDatabase()
-      .then(() => setIsDbReady(true))
-      .catch((err) => console.error('Failed to initialize local database', err));
-  }, []);
 
   useEffect(() => {
     if (isSessionLoading) return;
@@ -69,13 +78,30 @@ export default function RootLayout() {
     checkOnboarding().catch((err) => console.error('Onboarding check failed', err));
   }, [isSessionLoading]);
 
-  useSyncLifecycle(isDbReady ? session?.user.id : undefined);
+  useSyncLifecycle(session?.user.id);
+
+  return <AppContent />;
+}
+
+export default function RootLayout() {
+  const { status, retry } = useBootstrap();
+
+  // Hide the native splash once we have *something* to show in its place —
+  // the bootstrap loading screen itself (a deliberate, branded state) or
+  // the recovery screen — never leave the native splash up indefinitely.
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AppProviders>
-          <AppContent />
+          {status === 'ready' ? (
+            <BootstrappedApp />
+          ) : (
+            <BootstrapScreen status={status === 'error' ? 'error' : 'loading'} onRetry={retry} />
+          )}
         </AppProviders>
       </SafeAreaProvider>
     </GestureHandlerRootView>

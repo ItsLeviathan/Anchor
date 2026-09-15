@@ -81,7 +81,20 @@
       ],
       "expo-web-browser",
       "expo-apple-authentication",
-      "expo-local-authentication"
+      "expo-local-authentication",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 140,
+          "resizeMode": "contain",
+          "backgroundColor": "#FAFAF8",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#111110"
+          }
+        }
+      ]
     ]
   }
 }
