@@ -10,7 +10,7 @@ import { DailyBriefingCard } from '../../../components/insights/DailyBriefingCar
 import { EveningReviewCard } from '../../../components/insights/EveningReviewCard';
 import { FreeTimeCard } from '../../../components/insights/FreeTimeCard';
 import { TaskRow } from '../../../components/tasks/TaskRow';
-import { EmptyState, SyncStatusBadge } from '../../../components/ui';
+import { EmptyState, ErrorBoundary, SyncStatusBadge } from '../../../components/ui';
 import { DailyPlanCard } from '../../../features/ai/DailyPlanCard';
 import { useBills } from '../../../features/bills/useBills';
 import { useCategories } from '../../../features/categories/useCategories';
@@ -102,6 +102,7 @@ export default function TodayScreen() {
   const isLoading = isSessionLoading || isTasksLoading || isEventsLoading || isBillsLoading || isHabitsLoading;
 
   return (
+    <ErrorBoundary>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{
@@ -197,5 +198,6 @@ export default function TodayScreen() {
         </>
       )}
     </ScrollView>
+    </ErrorBoundary>
   );
 }

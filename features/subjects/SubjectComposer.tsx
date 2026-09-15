@@ -22,8 +22,14 @@ export function SubjectComposer() {
 
   async function handleSave() {
     if (!userId || !canSave) return;
-    await createSubject.mutateAsync({ userId, name, instructor: instructor.trim() || null });
-    router.back();
+    try {
+      await createSubject.mutateAsync({ userId, name, instructor: instructor.trim() || null });
+      router.back();
+    } catch (err) {
+      // Global mutation error handler already toasts; just keep the sheet
+      // open (input preserved) and avoid an unhandled rejection.
+      console.error('Failed to create subject', err);
+    }
   }
 
   return (

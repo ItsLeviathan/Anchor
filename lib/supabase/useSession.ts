@@ -27,23 +27,35 @@ export function useSession(): SessionState {
     let mounted = true;
 
     async function init() {
-      const { data: existing } = await supabase.auth.getSession();
+      try {
+        const { data: existing } = await supabase.auth.getSession();
 
-      if (existing.session) {
-        if (mounted) setState({ session: existing.session, isLoading: false, error: null });
-        return;
+        if (existing.session) {
+          if (mounted) setState({ session: existing.session, isLoading: false, error: null });
+          return;
+        }
+
+        const { data: anon, error } = await supabase.auth.signInAnonymously();
+
+        if (!mounted) return;
+
+        if (error) {
+          setState({ session: null, isLoading: false, error: error.message });
+          return;
+        }
+
+        setState({ session: anon.session, isLoading: false, error: null });
+      } catch (err) {
+        // A thrown error here (e.g. no network on first launch, before any
+        // session exists) must still resolve isLoading - every screen in
+        // the app gates its own loading state on isSessionLoading, so
+        // leaving it true forever would strand the whole app on a spinner.
+        console.error('Session initialization failed', err);
+        if (mounted) {
+          const message = err instanceof Error ? err.message : 'Failed to start a session.';
+          setState({ session: null, isLoading: false, error: message });
+        }
       }
-
-      const { data: anon, error } = await supabase.auth.signInAnonymously();
-
-      if (!mounted) return;
-
-      if (error) {
-        setState({ session: null, isLoading: false, error: error.message });
-        return;
-      }
-
-      setState({ session: anon.session, isLoading: false, error: null });
     }
 
     init();

@@ -33,7 +33,11 @@ export function useDeleteDocument(userId: string | undefined) {
 
   return useMutation({
     mutationFn: async (document: AnchorDocument) => {
-      await cancelDocumentExpirationReminder(document.id);
+      // Best-effort: a failure to cancel a stale reminder shouldn't block
+      // the actual delete.
+      await cancelDocumentExpirationReminder(document.id).catch((err) =>
+        console.error('Failed to cancel document expiration reminder', err)
+      );
       await deleteDocument(document);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [...DOCUMENTS_KEY, userId] }),

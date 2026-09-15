@@ -219,6 +219,28 @@ export async function initDatabase(): Promise<void> {
       last_error TEXT
     );
   `);
+
+  await runMigrations(db);
+}
+
+/**
+ * sync_queue gained two columns after its original release: `next_attempt_at`
+ * (backoff gate - see lib/sync/queue.ts) and `failed` (permanent give-up flag
+ * once an entry has exhausted MAX_SYNC_ATTEMPTS or hit a non-retryable
+ * error). CREATE TABLE IF NOT EXISTS never adds columns to a table that
+ * already exists on-device, so devices upgrading from an earlier build need
+ * an explicit, idempotent ALTER TABLE.
+ */
+async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
+  const columns = await db.getAllAsync<{ name: string }>(`PRAGMA table_info(sync_queue);`);
+  const names = new Set(columns.map((c) => c.name));
+
+  if (!names.has('next_attempt_at')) {
+    await db.execAsync(`ALTER TABLE sync_queue ADD COLUMN next_attempt_at TEXT;`);
+  }
+  if (!names.has('failed')) {
+    await db.execAsync(`ALTER TABLE sync_queue ADD COLUMN failed INTEGER NOT NULL DEFAULT 0;`);
+  }
 }
 
 export interface CachedProfile {

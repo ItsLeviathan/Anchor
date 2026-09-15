@@ -29,14 +29,20 @@ export function NoteComposer() {
       .map((tag) => tag.trim())
       .filter(Boolean);
 
-    await createNote.mutateAsync({
-      userId,
-      title: title.trim() || null,
-      content: content.trim(),
-      tags,
-    });
+    try {
+      await createNote.mutateAsync({
+        userId,
+        title: title.trim() || null,
+        content: content.trim(),
+        tags,
+      });
 
-    router.back();
+      router.back();
+    } catch (err) {
+      // Global mutation error handler already toasts; just keep the sheet
+      // open (input preserved) and avoid an unhandled rejection.
+      console.error('Failed to create note', err);
+    }
   }
 
   return (

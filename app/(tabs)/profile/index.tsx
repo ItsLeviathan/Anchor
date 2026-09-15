@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card } from '../../../components/ui';
+import { Card, ErrorBoundary } from '../../../components/ui';
 import { useSetStudentMode, useStudentMode } from '../../../features/studentMode/useStudentMode';
 import { cacheProfile, getCachedProfile, type CachedProfile } from '../../../lib/database/db';
 import { arePersonalizedSuggestionsEnabled, setPersonalizedSuggestionsEnabled } from '../../../lib/insights/preferences';
@@ -113,6 +113,7 @@ export default function ProfileScreen() {
   const isLoading = isSessionLoading || isStudentModeLoading;
 
   return (
+    <ErrorBoundary>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.lg }}
@@ -267,5 +268,6 @@ export default function ProfileScreen() {
         </>
       )}
     </ScrollView>
+    </ErrorBoundary>
   );
 }

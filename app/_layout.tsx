@@ -14,7 +14,7 @@ import { useSyncLifecycle } from '../lib/sync/useSyncLifecycle';
 import { AppProviders } from '../providers/AppProviders';
 
 function AppContent() {
-  const { isLocked, unlock, isAuthenticating } = useAppLock();
+  const { isLocked, unlock, isAuthenticating, lastError } = useAppLock();
 
   return (
     <View style={StyleSheet.absoluteFill}>
@@ -38,7 +38,7 @@ function AppContent() {
       </Stack>
       {isLocked ? (
         <View style={StyleSheet.absoluteFill}>
-          <LockScreen onUnlock={unlock} isAuthenticating={isAuthenticating} />
+          <LockScreen onUnlock={unlock} isAuthenticating={isAuthenticating} error={lastError} />
         </View>
       ) : null}
     </View>

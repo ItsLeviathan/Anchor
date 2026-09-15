@@ -16,14 +16,26 @@ export default {
 
     // Remove uploaded documents from Storage before deleting the user row,
     // because Storage objects are not cascade-deleted by the DB trigger.
-    const { data: docRows } = await ctx.supabase
+    // Both the list and the remove are checked explicitly — silently
+    // ignoring a failure here would leave orphaned private files behind
+    // after the user believes their account (and all their data) is gone.
+    const { data: docRows, error: listError } = await ctx.supabase
       .from('documents')
       .select('storage_path')
       .eq('user_id', userId);
 
+    if (listError) {
+      console.error('delete-account: failed to list documents for cleanup', listError);
+      return Response.json({ error: 'Could not delete account. Please try again.' }, { status: 500 });
+    }
+
     if (docRows && docRows.length > 0) {
       const paths = docRows.map((d: { storage_path: string }) => d.storage_path);
-      await ctx.supabaseAdmin.storage.from('documents').remove(paths);
+      const { error: removeError } = await ctx.supabaseAdmin.storage.from('documents').remove(paths);
+      if (removeError) {
+        console.error('delete-account: failed to remove storage objects', removeError);
+        return Response.json({ error: 'Could not delete account. Please try again.' }, { status: 500 });
+      }
     }
 
     // Deleting the auth user cascades to every table that references auth.users(id)
@@ -31,8 +43,10 @@ export default {
     const { error } = await ctx.supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (error) {
-      console.error('Failed to delete user', error);
-      return Response.json({ error: error.message }, { status: 500 });
+      // Log the real error server-side only; never return internal error
+      // details (driver messages, stack traces, etc.) to the client.
+      console.error('delete-account: failed to delete user', error);
+      return Response.json({ error: 'Could not delete account. Please try again.' }, { status: 500 });
     }
 
     return Response.json({ success: true });

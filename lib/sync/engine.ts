@@ -72,8 +72,10 @@ import {
   removeLocalAssignment,
   upsertLocalAssignment,
 } from '../database/localAssignments';
+import { getDb } from '../database/db';
 import { useSyncStore } from '../../store/useSyncStore';
 import {
+  countFailed,
   countPending,
   dequeueForEntity,
   enqueue,
@@ -242,8 +244,35 @@ const ALL_ENTITY_TYPES: SyncEntityType[] = [
 ];
 
 export async function refreshPendingCount(): Promise<void> {
-  const count = await countPending();
-  useSyncStore.getState().setPendingCount(count);
+  const [pending, failed] = await Promise.all([countPending(), countFailed()]);
+  useSyncStore.getState().setPendingCount(pending);
+  useSyncStore.getState().setFailedCount(failed);
+}
+
+/**
+ * Classifies a failed push so markAttemptFailed knows whether retrying can
+ * ever succeed. Auth/authorization failures (expired/invalid session, RLS
+ * denial) and validation failures (bad payload shape, constraint violation)
+ * will fail identically on every retry - resending them just wastes
+ * requests and, for auth errors, risks hammering the auth endpoint. Only
+ * genuinely transient errors (network blips, 5xx, timeouts) are retried.
+ */
+function isRetryableSyncError(err: unknown): boolean {
+  const anyErr = err as { code?: string; status?: number; name?: string } | null | undefined;
+  if (!anyErr || typeof anyErr !== 'object') return true;
+
+  if (anyErr.status === 401 || anyErr.status === 403) return false;
+  if (anyErr.name === 'AuthApiError' || anyErr.name === 'AuthSessionMissingError') return false;
+
+  // Postgres/PostgREST error codes: 22xxx data exception, 23xxx integrity
+  // constraint violation (unique/check/fk), 42501 insufficient_privilege
+  // (RLS denial). None of these are fixed by resending the same payload.
+  if (typeof anyErr.code === 'string') {
+    if (anyErr.code === '42501') return false;
+    if (anyErr.code.startsWith('22') || anyErr.code.startsWith('23')) return false;
+  }
+
+  return true;
 }
 
 /** Queues a create/update for later replay, immediately reflecting the new count in the sync status UI. */
@@ -307,7 +336,8 @@ export async function flushQueue(): Promise<void> {
 
         await removeEntry(entry.id);
       } catch (err) {
-        await markAttemptFailed(entry.id, err instanceof Error ? err.message : String(err));
+        const message = err instanceof Error ? err.message : String(err);
+        await markAttemptFailed(entry.id, message, isRetryableSyncError(err));
         // Keep going - one bad entry (e.g. a transient network blip mid-flush) shouldn't stall the rest of the queue.
       }
     }
@@ -328,27 +358,41 @@ export async function flushQueue(): Promise<void> {
  * exist locally but no longer exist on the server (and aren't pending) are
  * removed, so deletions made elsewhere - the Supabase dashboard, a future
  * second device - eventually show up here too.
+ *
+ * Race note: `pendingIds` is deliberately fetched *after* the (potentially
+ * slow) network round trip for `fetchRemote`, not alongside it. An edit
+ * queued while the fetch was in flight would otherwise miss the pending
+ * check entirely and get clobbered by the older server row it fetched
+ * before the edit happened - fetching it last shrinks that window from "the
+ * whole network round trip" down to "the local upsert loop below". A local
+ * edit made mid-loop is a narrower, harder-to-close window (would need the
+ * pending check and the write to be one atomic unit) - flagged for human
+ * review rather than fixed here since it needs a structural change (see
+ * audit report).
  */
 export async function pullRemoteChanges(userId: string): Promise<void> {
+  const db = await getDb();
+
   for (const entityType of ALL_ENTITY_TYPES) {
     const adapter = adapters[entityType];
 
-    const [remoteRows, pendingIds, localIds] = await Promise.all([
-      adapter.fetchRemote(),
-      getPendingEntityIds(entityType),
-      adapter.fetchLocalIds(userId),
-    ]);
+    const [remoteRows, localIds] = await Promise.all([adapter.fetchRemote(), adapter.fetchLocalIds(userId)]);
+    const pendingIds = await getPendingEntityIds(entityType);
 
     const remoteIds = new Set(remoteRows.map((row) => row.id as string));
 
-    for (const row of remoteRows) {
-      if (pendingIds.has(row.id)) continue;
-      await adapter.upsertLocal(row, { markSynced: true });
-    }
+    // One transaction per entity type so a crash/kill mid-merge can't leave
+    // the local table half-updated relative to sync_queue's view of it.
+    await db.withTransactionAsync(async () => {
+      for (const row of remoteRows) {
+        if (pendingIds.has(row.id)) continue;
+        await adapter.upsertLocal(row, { markSynced: true });
+      }
 
-    for (const id of localIds) {
-      if (!remoteIds.has(id) && !pendingIds.has(id)) await adapter.removeLocal(id);
-    }
+      for (const id of localIds) {
+        if (!remoteIds.has(id) && !pendingIds.has(id)) await adapter.removeLocal(id);
+      }
+    });
   }
 
   const [remoteCategories, remoteCalendars] = await Promise.all([fetchRemoteCategories(), fetchRemoteCalendars()]);
@@ -356,30 +400,52 @@ export async function pullRemoteChanges(userId: string): Promise<void> {
   await replaceLocalCalendars(userId, remoteCalendars);
 }
 
+/**
+ * Serializes the two full sync cycles below (app-start and reconnect) so
+ * they can never run concurrently. Both call pullRemoteChanges, which has
+ * no locking of its own - two overlapping passes over the same entity
+ * tables (e.g. app cold-starts online, then NetInfo's first callback fires
+ * a "reconnect" a moment later) would interleave reads/writes across the
+ * same rows and could re-introduce exactly the stale-overwrite race that
+ * pullRemoteChanges' own pending-id check is trying to avoid. A caller that
+ * arrives while a cycle is already running joins that cycle's promise
+ * instead of starting a second one - it still does what it's called to
+ * (push + pull get applied), that work is just shared.
+ */
+let activeSyncCycle: Promise<void> | null = null;
+
+function runSyncCycle(label: string, fn: () => Promise<void>): Promise<void> {
+  if (activeSyncCycle) return activeSyncCycle;
+
+  const cycle = (async () => {
+    useSyncStore.getState().setSyncing(true);
+    try {
+      await fn();
+    } catch (err) {
+      console.error(`${label} failed`, err);
+    } finally {
+      await refreshPendingCount();
+      useSyncStore.getState().setSyncing(false);
+      activeSyncCycle = null;
+    }
+  })();
+
+  activeSyncCycle = cycle;
+  return cycle;
+}
+
 /** Called once when a session becomes available (app start / sign-in). */
-export async function syncOnAppStart(userId: string): Promise<void> {
-  useSyncStore.getState().setSyncing(true);
-  try {
+export function syncOnAppStart(userId: string): Promise<void> {
+  return runSyncCycle('Initial sync', async () => {
     await pullRemoteChanges(userId);
     await flushQueue();
-  } catch (err) {
-    console.error('Initial sync failed', err);
-  } finally {
-    await refreshPendingCount();
-    useSyncStore.getState().setSyncing(false);
-  }
+  });
 }
 
 /** Called when connectivity is restored - push first so local edits aren't clobbered by the pull that follows. */
-export async function syncOnReconnect(userId: string): Promise<void> {
-  useSyncStore.getState().setSyncing(true);
-  try {
+export function syncOnReconnect(userId: string): Promise<void> {
+  return runSyncCycle('Reconnect sync', async () => {
     await flushQueue();
     await pullRemoteChanges(userId);
-  } catch (err) {
-    console.error('Reconnect sync failed', err);
-  } finally {
-    await refreshPendingCount();
-    useSyncStore.getState().setSyncing(false);
-  }
+  });
 }

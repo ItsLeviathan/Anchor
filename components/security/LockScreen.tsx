@@ -6,9 +6,10 @@ import { useTheme } from '../../lib/theme/ThemeProvider';
 interface LockScreenProps {
   onUnlock: () => void;
   isAuthenticating: boolean;
+  error?: string | null;
 }
 
-export function LockScreen({ onUnlock, isAuthenticating }: LockScreenProps) {
+export function LockScreen({ onUnlock, isAuthenticating, error }: LockScreenProps) {
   const { colors, spacing, typography, radius } = useTheme();
 
   // Auto-prompt on mount so the biometric sheet appears immediately.
@@ -56,6 +57,15 @@ export function LockScreen({ onUnlock, isAuthenticating }: LockScreenProps) {
           {isAuthenticating ? 'Unlocking…' : 'Unlock'}
         </Text>
       </Pressable>
+
+      {error ? (
+        <Text
+          accessibilityLiveRegion="polite"
+          style={[typography.caption, { color: colors.danger, marginTop: spacing.md, textAlign: 'center' }]}
+        >
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }

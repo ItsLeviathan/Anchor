@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StatRow } from '../../../components/insights/StatRow';
 import { WeeklyReviewCard } from '../../../components/ai/WeeklyReviewCard';
-import { Card, EmptyState } from '../../../components/ui';
+import { Card, EmptyState, ErrorBoundary } from '../../../components/ui';
 import { useCategories } from '../../../features/categories/useCategories';
 import { useEvents } from '../../../features/events/useEvents';
 import { useExpenses } from '../../../features/expenses/useExpenses';
@@ -55,6 +55,7 @@ export default function InsightsScreen() {
   const isLoading = isSessionLoading || isTasksLoading || isEventsLoading || isExpensesLoading || isHabitsLoading;
 
   return (
+    <ErrorBoundary>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{
@@ -194,5 +195,6 @@ export default function InsightsScreen() {
         </>
       )}
     </ScrollView>
+    </ErrorBoundary>
   );
 }

@@ -23,8 +23,14 @@ export function ShoppingItemComposer() {
 
   async function handleSave() {
     if (!list || !canSave) return;
-    await addItem.mutateAsync({ list, name, quantity: quantity.trim() || null });
-    router.back();
+    try {
+      await addItem.mutateAsync({ list, name, quantity: quantity.trim() || null });
+      router.back();
+    } catch (err) {
+      // Global mutation error handler already toasts; just keep the sheet
+      // open (input preserved) and avoid an unhandled rejection.
+      console.error('Failed to add shopping item', err);
+    }
   }
 
   return (

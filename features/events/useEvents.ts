@@ -30,7 +30,9 @@ export function useDeleteEvent(userId: string | undefined) {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await cancelEventReminder(id);
+      // Best-effort: a failure to cancel a stale reminder shouldn't block
+      // the actual delete.
+      await cancelEventReminder(id).catch((err) => console.error('Failed to cancel event reminder', err));
       await deleteEvent(id);
     },
     onSuccess: () => {

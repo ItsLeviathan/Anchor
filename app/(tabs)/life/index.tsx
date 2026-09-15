@@ -9,7 +9,7 @@ import { HabitListItem } from '../../../components/habits/HabitListItem';
 import { NoteListItem } from '../../../components/notes/NoteListItem';
 import { ShoppingItemRow } from '../../../components/shopping/ShoppingItemRow';
 import { SubjectCard } from '../../../components/subjects/SubjectCard';
-import { Card, EmptyState } from '../../../components/ui';
+import { Card, EmptyState, ErrorBoundary } from '../../../components/ui';
 import { useAssignments, useDeleteAssignment, useToggleAssignmentStatus } from '../../../features/assignments/useAssignments';
 import { useBills, useDeleteBill, useMarkBillPaid } from '../../../features/bills/useBills';
 import { useDeleteDocument, useDocuments } from '../../../features/documents/useDocuments';
@@ -114,6 +114,7 @@ export default function LifeScreen() {
   const currency = expenses[0]?.currency ?? bills[0]?.currency ?? 'PHP';
 
   return (
+    <ErrorBoundary>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{
@@ -289,5 +290,6 @@ export default function LifeScreen() {
         </>
       )}
     </ScrollView>
+    </ErrorBoundary>
   );
 }

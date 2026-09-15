@@ -20,11 +20,19 @@ export async function isBiometricAvailable(): Promise<boolean> {
 }
 
 export async function authenticateWithBiometric(): Promise<boolean> {
-  const result = await LocalAuthentication.authenticateAsync({
-    promptMessage: 'Unlock Anchor',
-    fallbackLabel: 'Use passcode',
-    cancelLabel: 'Cancel',
-    disableDeviceFallback: false,
-  });
-  return result.success;
+  try {
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Unlock Anchor',
+      fallbackLabel: 'Use passcode',
+      cancelLabel: 'Cancel',
+      disableDeviceFallback: false,
+    });
+    return result.success;
+  } catch (err) {
+    // Fail closed: if the native authentication module throws instead of
+    // resolving with { success: false, error }, that must never be treated
+    // as an unlock. Log rather than swallow so the failure is visible.
+    console.error('Biometric authentication threw unexpectedly', err);
+    return false;
+  }
 }

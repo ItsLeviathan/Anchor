@@ -38,15 +38,21 @@ export function AssignmentComposer() {
   async function handleSave() {
     if (!userId || !subjectId || !canSave) return;
 
-    await createAssignment.mutateAsync({
-      userId,
-      subjectId,
-      kind,
-      title,
-      dueDate: dueDate ? toDatePart(dueDate) : null,
-    });
+    try {
+      await createAssignment.mutateAsync({
+        userId,
+        subjectId,
+        kind,
+        title,
+        dueDate: dueDate ? toDatePart(dueDate) : null,
+      });
 
-    router.back();
+      router.back();
+    } catch (err) {
+      // Global mutation error handler already toasts; just keep the sheet
+      // open (input preserved) and avoid an unhandled rejection.
+      console.error('Failed to create assignment', err);
+    }
   }
 
   return (

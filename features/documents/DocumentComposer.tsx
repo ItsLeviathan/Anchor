@@ -55,17 +55,23 @@ export function DocumentComposer() {
   async function handleSave() {
     if (!userId || !file || !canSave) return;
 
-    await createDocument.mutateAsync({
-      userId,
-      name,
-      category,
-      file,
-      issueDate: issueDate ? toDatePart(issueDate) : null,
-      expirationDate: expirationDate ? toDatePart(expirationDate) : null,
-      notes: notes.trim() || null,
-    });
+    try {
+      await createDocument.mutateAsync({
+        userId,
+        name,
+        category,
+        file,
+        issueDate: issueDate ? toDatePart(issueDate) : null,
+        expirationDate: expirationDate ? toDatePart(expirationDate) : null,
+        notes: notes.trim() || null,
+      });
 
-    router.back();
+      router.back();
+    } catch (err) {
+      // Global mutation error handler already toasts; just keep the sheet
+      // open (input preserved) and avoid an unhandled rejection.
+      console.error('Failed to create document', err);
+    }
   }
 
   return (

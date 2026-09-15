@@ -40,6 +40,9 @@ export default function SignInScreen() {
       } else {
         router.replace('/(tabs)/today');
       }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Sign in failed. Please try again.';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

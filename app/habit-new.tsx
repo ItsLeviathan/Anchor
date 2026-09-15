@@ -1,7 +1,12 @@
 import React from 'react';
 
+import { ErrorBoundary } from '../components/ui';
 import { HabitComposer } from '../features/habits/HabitComposer';
 
 export default function HabitNewScreen() {
-  return <HabitComposer />;
+  return (
+    <ErrorBoundary>
+      <HabitComposer />
+    </ErrorBoundary>
+  );
 }

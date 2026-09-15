@@ -61,14 +61,39 @@ export function BrainDumpComposer() {
     if (!userId) return;
     setStatus('creating');
 
+    // Items already created before a failure stay created - only the
+    // remaining ones need to be retried, so failed items are removed from
+    // the list rather than resetting the whole batch.
+    const remaining: PreviewItem[] = [];
+    let failedCount = 0;
+
     for (const item of items) {
-      if (!item.selected) continue;
-      await createTask.mutateAsync({
-        userId,
-        title: item.title,
-        categoryId: categoryIdByName.get(item.category.toLowerCase()) ?? null,
-        dueDate: item.dueDate,
-      });
+      if (!item.selected) {
+        remaining.push(item);
+        continue;
+      }
+      try {
+        await createTask.mutateAsync({
+          userId,
+          title: item.title,
+          categoryId: categoryIdByName.get(item.category.toLowerCase()) ?? null,
+          dueDate: item.dueDate,
+        });
+      } catch (err) {
+        console.error('Failed to create task from brain dump', err);
+        failedCount += 1;
+        remaining.push(item);
+      }
+    }
+
+    if (failedCount > 0) {
+      // The global mutation error handler (lib/query/queryClient.ts) already
+      // toasts per failed item; just return to the preview with only the
+      // failed items left, so the user can retry them instead of staying
+      // stuck on a spinner or losing the ones that already succeeded.
+      setItems(remaining);
+      setStatus('preview');
+      return;
     }
 
     router.back();

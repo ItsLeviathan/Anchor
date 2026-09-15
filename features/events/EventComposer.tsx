@@ -84,16 +84,22 @@ export function EventComposer() {
   async function handleSave() {
     if (!canSave || !userId || !defaultCalendar) return;
 
-    await createEvent.mutateAsync({
-      userId,
-      calendarId: defaultCalendar.id,
-      title,
-      startAt: effectiveStart.toISOString(),
-      endAt: effectiveEnd.toISOString(),
-      allDay,
-    });
+    try {
+      await createEvent.mutateAsync({
+        userId,
+        calendarId: defaultCalendar.id,
+        title,
+        startAt: effectiveStart.toISOString(),
+        endAt: effectiveEnd.toISOString(),
+        allDay,
+      });
 
-    router.back();
+      router.back();
+    } catch (err) {
+      // Global mutation error handler already toasts; just keep the sheet
+      // open (input preserved) and avoid an unhandled rejection.
+      console.error('Failed to create event', err);
+    }
   }
 
   return (

@@ -38,16 +38,22 @@ export function BillComposer() {
   async function handleSave() {
     if (!userId || !canSave) return;
 
-    await createBill.mutateAsync({
-      userId,
-      name,
-      amount,
-      category,
-      dueDate: toDatePart(dueDate),
-      recurrenceRule,
-    });
+    try {
+      await createBill.mutateAsync({
+        userId,
+        name,
+        amount,
+        category,
+        dueDate: toDatePart(dueDate),
+        recurrenceRule,
+      });
 
-    router.back();
+      router.back();
+    } catch (err) {
+      // Global mutation error handler already toasts; just keep the sheet
+      // open (input preserved) and avoid an unhandled rejection.
+      console.error('Failed to create bill', err);
+    }
   }
 
   return (

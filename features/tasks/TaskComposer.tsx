@@ -94,18 +94,26 @@ export function TaskComposer() {
   async function handleSave() {
     if (!userId || !canSave) return;
 
-    await createTask.mutateAsync({
-      userId,
-      title,
-      categoryId,
-      dueDate: dueDate ? toDatePart(dueDate) : null,
-      dueTime: dueDate ? toTimePart(dueDate) : null,
-      priority,
-      recurrenceRule: dueDate ? recurrenceRule : null,
-      estimatedDurationMinutes,
-    });
+    try {
+      await createTask.mutateAsync({
+        userId,
+        title,
+        categoryId,
+        dueDate: dueDate ? toDatePart(dueDate) : null,
+        dueTime: dueDate ? toTimePart(dueDate) : null,
+        priority,
+        recurrenceRule: dueDate ? recurrenceRule : null,
+        estimatedDurationMinutes,
+      });
 
-    router.back();
+      router.back();
+    } catch (err) {
+      // Stay on the sheet so the user's input isn't lost; the global
+      // mutation error handler (lib/query/queryClient.ts) already surfaces
+      // a toast, so this only needs to stop the unhandled rejection and
+      // keep the sheet open for a retry.
+      console.error('Failed to create task', err);
+    }
   }
 
   return (

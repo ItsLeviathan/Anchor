@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ErrorBoundary } from '../components/ui';
 import { type SearchResultType, useSearch } from '../features/search/useSearch';
 import { useSession } from '../lib/supabase/useSession';
 import { useTheme } from '../lib/theme/ThemeProvider';
@@ -38,6 +39,7 @@ export default function SearchScreen() {
   const { query, setQuery, results, isSearching } = useSearch(session?.user.id);
 
   return (
+    <ErrorBoundary>
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Search bar */}
       <View
@@ -151,5 +153,6 @@ export default function SearchScreen() {
         ) : null}
       </ScrollView>
     </View>
+    </ErrorBoundary>
   );
 }

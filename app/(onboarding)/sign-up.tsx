@@ -53,6 +53,9 @@ export default function SignUpScreen() {
       } else {
         setSent(true);
       }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Sign up failed. Please try again.';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

@@ -26,14 +26,20 @@ export function HabitComposer() {
   async function handleSave() {
     if (!userId || !canSave) return;
 
-    await createHabit.mutateAsync({
-      userId,
-      name,
-      frequency,
-      daysOfWeek: frequency === 'weekly' ? daysOfWeek : null,
-    });
+    try {
+      await createHabit.mutateAsync({
+        userId,
+        name,
+        frequency,
+        daysOfWeek: frequency === 'weekly' ? daysOfWeek : null,
+      });
 
-    router.back();
+      router.back();
+    } catch (err) {
+      // Global mutation error handler already toasts; just keep the sheet
+      // open (input preserved) and avoid an unhandled rejection.
+      console.error('Failed to create habit', err);
+    }
   }
 
   return (

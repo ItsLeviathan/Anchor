@@ -1,7 +1,12 @@
 import React from 'react';
 
+import { ErrorBoundary } from '../components/ui';
 import { TaskComposer } from '../features/tasks/TaskComposer';
 
 export default function TaskNewScreen() {
-  return <TaskComposer />;
+  return (
+    <ErrorBoundary>
+      <TaskComposer />
+    </ErrorBoundary>
+  );
 }

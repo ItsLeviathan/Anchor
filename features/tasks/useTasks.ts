@@ -59,7 +59,11 @@ export function useCompleteTask(userId: string | undefined) {
   return useMutation({
     mutationFn: async (task: Task) => {
       const completed = await setTaskStatus(task.id, 'completed');
-      await cancelTaskReminder(task.id);
+      // Reminder scheduling is best-effort: the task's completed status is
+      // already persisted above, so a notification API failure here must
+      // not surface as a failed mutation (which would skip invalidation and
+      // leave the UI showing stale, pre-completion state).
+      await cancelTaskReminder(task.id).catch((err) => console.error('Failed to cancel task reminder', err));
 
       if (task.recurrenceRule && task.dueDate) {
         const nextTask = await createTask({
@@ -71,7 +75,7 @@ export function useCompleteTask(userId: string | undefined) {
           priority: task.priority,
           recurrenceRule: task.recurrenceRule,
         });
-        await scheduleTaskReminder(nextTask);
+        await scheduleTaskReminder(nextTask).catch((err) => console.error('Failed to schedule next task reminder', err));
       }
 
       return completed;
@@ -89,7 +93,7 @@ export function useReopenTask(userId: string | undefined) {
   return useMutation({
     mutationFn: async (id: string) => {
       const reopened = await setTaskStatus(id, 'pending');
-      await scheduleTaskReminder(reopened);
+      await scheduleTaskReminder(reopened).catch((err) => console.error('Failed to schedule task reminder', err));
       return reopened;
     },
     onSuccess: () => {
@@ -104,7 +108,7 @@ export function useDeleteTask(userId: string | undefined) {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await cancelTaskReminder(id);
+      await cancelTaskReminder(id).catch((err) => console.error('Failed to cancel task reminder', err));
       await deleteTask(id);
     },
     onSuccess: () => {

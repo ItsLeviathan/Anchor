@@ -38,16 +38,22 @@ export function ExpenseComposer() {
   async function handleSave() {
     if (!userId || !canSave) return;
 
-    await createExpense.mutateAsync({
-      userId,
-      type,
-      amount,
-      category,
-      date: toDatePart(date),
-      notes: notes.trim() || null,
-    });
+    try {
+      await createExpense.mutateAsync({
+        userId,
+        type,
+        amount,
+        category,
+        date: toDatePart(date),
+        notes: notes.trim() || null,
+      });
 
-    router.back();
+      router.back();
+    } catch (err) {
+      // Global mutation error handler already toasts; just keep the sheet
+      // open (input preserved) and avoid an unhandled rejection.
+      console.error('Failed to create expense', err);
+    }
   }
 
   return (

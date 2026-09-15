@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EventRow } from '../../../components/calendar/EventRow';
 import { MonthGrid } from '../../../components/calendar/MonthGrid';
 import { TaskRow } from '../../../components/tasks/TaskRow';
-import { EmptyState } from '../../../components/ui';
+import { EmptyState, ErrorBoundary } from '../../../components/ui';
 import { useDeleteEvent, useEvents } from '../../../features/events/useEvents';
 import { useCompleteTask, useDeleteTask, useReopenTask, useTasks } from '../../../features/tasks/useTasks';
 import { buildAgenda } from '../../../lib/calendar/agenda';
@@ -69,6 +69,7 @@ export default function CalendarScreen() {
   const isLoading = isSessionLoading || isTasksLoading || isEventsLoading;
 
   return (
+    <ErrorBoundary>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{
@@ -150,5 +151,6 @@ export default function CalendarScreen() {
         </>
       )}
     </ScrollView>
+    </ErrorBoundary>
   );
 }
