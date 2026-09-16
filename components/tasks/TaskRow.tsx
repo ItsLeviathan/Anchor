@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 
 import { FadeInView } from '../ui/FadeInView';
+import { IconBadge } from '../ui/IconBadge';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import { formatDueLabel } from '../../lib/tasks/formatDueLabel';
 import { isOverdue } from '../../lib/tasks/prioritization';
@@ -18,7 +19,7 @@ interface TaskRowProps {
 }
 
 function TaskRowInner({ task, categoryColor, highlighted, onComplete, onDelete }: TaskRowProps) {
-  const { colors, spacing, radius, typography } = useTheme();
+  const { colors, spacing, radius, typography, shadow, scheme } = useTheme();
   const swipeableRef = React.useRef<React.ComponentRef<typeof ReanimatedSwipeable>>(null);
   const overdue = isOverdue(task);
   const isCompleted = task.status === 'completed';
@@ -29,6 +30,8 @@ function TaskRowInner({ task, categoryColor, highlighted, onComplete, onDelete }
     high: '#D98A3D',
     urgent: colors.danger,
   };
+
+  const badgeColor = categoryColor ?? priorityColors[task.priority];
 
   return (
     <ReanimatedSwipeable
@@ -72,8 +75,9 @@ function TaskRowInner({ task, categoryColor, highlighted, onComplete, onDelete }
             backgroundColor: colors.surface,
             borderRadius: radius.lg,
             padding: spacing.md,
-            borderWidth: highlighted ? 1.5 : 0,
-            borderColor: highlighted ? colors.accent : 'transparent',
+            borderWidth: highlighted ? 1.5 : scheme === 'dark' ? StyleSheet.hairlineWidth : 0,
+            borderColor: highlighted ? colors.accent : colors.border,
+            ...shadow.sm,
           },
         ]}
       >
@@ -119,7 +123,9 @@ function TaskRowInner({ task, categoryColor, highlighted, onComplete, onDelete }
           ) : null}
         </View>
 
-        {categoryColor ? <View style={[styles.categoryDot, { backgroundColor: categoryColor }]} /> : null}
+        <View style={{ marginLeft: spacing.sm }}>
+          <IconBadge name="list-outline" color={badgeColor} size="sm" />
+        </View>
       </View>
     </ReanimatedSwipeable>
   );
@@ -143,6 +149,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryDot: { width: 8, height: 8, borderRadius: 4, marginLeft: 8 },
   action: { width: 64, justifyContent: 'center', alignItems: 'center', marginVertical: 2 },
 });

@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { Bill } from '../../types';
+import { Card, IconBadge } from '../ui';
 
 interface BillListItemProps {
   bill: Bill;
@@ -11,35 +12,35 @@ interface BillListItemProps {
   onDelete: (bill: Bill) => void;
 }
 
-function formatDueLabel(dueDate: string): string {
+function isBillOverdue(dueDate: string): boolean {
   const [year, month, day] = dueDate.split('-').map(Number);
   const due = new Date(year, month - 1, day);
   const now = new Date();
-  const isOverdue = due.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return due.getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+}
+
+function formatDueLabel(dueDate: string, overdue: boolean): string {
+  const [year, month, day] = dueDate.split('-').map(Number);
+  const due = new Date(year, month - 1, day);
   const label = due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  return isOverdue ? `Overdue · ${label}` : `Due ${label}`;
+  return overdue ? `Overdue · ${label}` : `Due ${label}`;
 }
 
 export const BillListItem = React.memo(function BillListItem({ bill, onMarkPaid, onDelete }: BillListItemProps) {
-  const { colors, spacing, radius, typography } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const isPaid = bill.status === 'paid';
+  const overdue = !isPaid && isBillOverdue(bill.dueDate);
+  const badgeColor = overdue ? colors.danger : isPaid ? colors.success : colors.accent;
 
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderRadius: radius.lg,
-        padding: spacing.md,
-      }}
-    >
+    <Card style={{ flexDirection: 'row', alignItems: 'center' }}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: isPaid }}
         accessibilityLabel={isPaid ? 'Paid' : 'Mark as paid'}
         accessibilityHint={isPaid ? 'This bill is already paid' : 'Records this bill as paid and logs an expense'}
         onPress={() => !isPaid && onMarkPaid(bill)}
+        hitSlop={11}
         style={{
           width: 22,
           height: 22,
@@ -68,8 +69,12 @@ export const BillListItem = React.memo(function BillListItem({ bill, onMarkPaid,
           {bill.name}
         </Text>
         <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-          {formatDueLabel(bill.dueDate)}
+          {formatDueLabel(bill.dueDate, overdue)}
         </Text>
+      </View>
+
+      <View style={{ marginHorizontal: spacing.sm }}>
+        <IconBadge name="cash-outline" color={badgeColor} size="sm" />
       </View>
 
       <Text style={[typography.headline, { color: colors.textPrimary, marginRight: spacing.sm }]}>
@@ -81,10 +86,10 @@ export const BillListItem = React.memo(function BillListItem({ bill, onMarkPaid,
         accessibilityLabel="Delete bill"
         accessibilityHint="Permanently removes this bill"
         onPress={() => onDelete(bill)}
-        hitSlop={8}
+        hitSlop={13}
       >
         <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
       </Pressable>
-    </View>
+    </Card>
   );
 });

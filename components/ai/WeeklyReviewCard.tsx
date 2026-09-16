@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { Card } from '../ui';
+import { Card, IconBadge } from '../ui';
 import { useExpenses } from '../../features/expenses/useExpenses';
 import { useHabits } from '../../features/habits/useHabits';
 import { useTasks } from '../../features/tasks/useTasks';
@@ -32,7 +32,10 @@ export function WeeklyReviewCard() {
   if (status === 'done' && summary) {
     return (
       <Card style={{ marginBottom: spacing.lg }}>
-        <Text style={[typography.headline, { color: colors.textPrimary }]}>Your week</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
+          <IconBadge name="sparkles-outline" color={colors.accent} size="sm" />
+          <Text style={[typography.headline, { color: colors.textPrimary }]}>Your week</Text>
+        </View>
         <Text style={[typography.body, { color: colors.textPrimary, marginTop: spacing.xs }]}>{summary}</Text>
         <Pressable onPress={() => { setSummary(null); setStatus('idle'); }} style={{ marginTop: spacing.md }}>
           <Text style={[typography.caption, { color: colors.textTertiary, textDecorationLine: 'underline' }]}>
@@ -46,7 +49,10 @@ export function WeeklyReviewCard() {
   return (
     <Pressable onPress={handleReview}>
       <Card style={{ marginBottom: spacing.lg }}>
-        <Text style={[typography.headline, { color: colors.textPrimary }]}>Weekly review</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <IconBadge name="sparkles-outline" color={colors.accent} size="sm" />
+          <Text style={[typography.headline, { color: colors.textPrimary }]}>Weekly review</Text>
+        </View>
         <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs }]}>
           A quiet look at how your week went.
         </Text>

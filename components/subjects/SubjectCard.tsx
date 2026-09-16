@@ -5,7 +5,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { Assignment, Subject } from '../../types';
-import { Card } from '../ui';
+import { Card, IconBadge } from '../ui';
 
 const KIND_LABELS: Record<Assignment['kind'], string> = {
   assignment: 'Assignment',
@@ -37,10 +37,8 @@ export function SubjectCard({ subject, items, onToggleItem, onDeleteItem, onDele
     <Card style={{ marginBottom: spacing.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-          <View
-            style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: subject.color, marginRight: spacing.sm }}
-          />
-          <Text style={[typography.headline, { color: colors.textPrimary }]} numberOfLines={1}>
+          <IconBadge name="school-outline" color={subject.color} size="sm" />
+          <Text style={[typography.headline, { color: colors.textPrimary, marginLeft: spacing.sm }]} numberOfLines={1}>
             {subject.name}
           </Text>
         </View>
@@ -48,11 +46,11 @@ export function SubjectCard({ subject, items, onToggleItem, onDeleteItem, onDele
           <Pressable
             accessibilityLabel="Add assignment"
             onPress={() => router.push({ pathname: '/assignment-new', params: { subjectId: subject.id } })}
-            hitSlop={8}
+            hitSlop={12}
           >
             <Ionicons name="add-circle-outline" size={20} color={colors.accent} />
           </Pressable>
-          <Pressable accessibilityLabel="Delete subject" onPress={() => onDeleteSubject(subject)} hitSlop={8}>
+          <Pressable accessibilityLabel="Delete subject" onPress={() => onDeleteSubject(subject)} hitSlop={13}>
             <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
           </Pressable>
         </View>
@@ -66,7 +64,7 @@ export function SubjectCard({ subject, items, onToggleItem, onDeleteItem, onDele
             <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Pressable
                 onPress={() => onToggleItem(item)}
-                style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
+                style={{ flexDirection: 'row', alignItems: 'center', flex: 1, minHeight: 44 }}
               >
                 <View
                   style={{
@@ -87,7 +85,7 @@ export function SubjectCard({ subject, items, onToggleItem, onDeleteItem, onDele
                   </Text>
                 ) : null}
               </Pressable>
-              <Pressable accessibilityLabel="Delete item" onPress={() => onDeleteItem(item)} hitSlop={8}>
+              <Pressable accessibilityLabel="Delete item" onPress={() => onDeleteItem(item)} hitSlop={14}>
                 <Ionicons name="close" size={16} color={colors.textTertiary} />
               </Pressable>
             </View>

@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, ErrorBoundary } from '../../../components/ui';
+import { getTabBarClearance } from '../../../components/navigation/tabBarMetrics';
+import { Card, ErrorBoundary, IconBadge } from '../../../components/ui';
 import { useSetStudentMode, useStudentMode } from '../../../features/studentMode/useStudentMode';
 import { cacheProfile, getCachedProfile, type CachedProfile } from '../../../lib/database/db';
 import { arePersonalizedSuggestionsEnabled, setPersonalizedSuggestionsEnabled } from '../../../lib/insights/preferences';
@@ -125,15 +126,20 @@ export default function ProfileScreen() {
       ) : (
         <>
           <Card style={{ marginBottom: spacing.md }}>
-            <Text style={[typography.headline, { color: colors.textPrimary }]}>
-              {session?.user.is_anonymous ? 'Signed in anonymously' : 'Signed in'}
-            </Text>
-            <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.xs }]}>
-              User ID: {session?.user.id.slice(0, 8)}…
-            </Text>
-            <Text style={[typography.caption, { color: cached ? colors.success : colors.textTertiary, marginTop: spacing.xs }]}>
-              {cached ? 'Cached locally — available offline' : 'Caching locally…'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+              <IconBadge name="person-circle-outline" color={colors.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={[typography.headline, { color: colors.textPrimary }]}>
+                  {session?.user.is_anonymous ? 'Signed in anonymously' : 'Signed in'}
+                </Text>
+                <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.xs }]}>
+                  User ID: {session?.user.id.slice(0, 8)}…
+                </Text>
+                <Text style={[typography.caption, { color: cached ? colors.success : colors.textTertiary, marginTop: spacing.xs }]}>
+                  {cached ? 'Cached locally — available offline' : 'Caching locally…'}
+                </Text>
+              </View>
+            </View>
 
             {session?.user.is_anonymous ? (
               <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
@@ -181,11 +187,14 @@ export default function ProfileScreen() {
 
           <Card>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flex: 1, marginRight: spacing.md }}>
-                <Text style={[typography.headline, { color: colors.textPrimary }]}>Task & event reminders</Text>
-                <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-                  Notify me when something is due or about to start
-                </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.md, gap: spacing.sm }}>
+                <IconBadge name="notifications-outline" color={colors.accent} size="sm" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.headline, { color: colors.textPrimary }]}>Task & event reminders</Text>
+                  <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
+                    Notify me when something is due or about to start
+                  </Text>
+                </View>
               </View>
               <Switch
                 value={remindersOn}
@@ -197,11 +206,14 @@ export default function ProfileScreen() {
 
           <Card style={{ marginTop: spacing.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flex: 1, marginRight: spacing.md }}>
-                <Text style={[typography.headline, { color: colors.textPrimary }]}>Personalized suggestions</Text>
-                <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-                  Free-time suggestions based on your schedule and task estimates
-                </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.md, gap: spacing.sm }}>
+                <IconBadge name="sparkles-outline" color={colors.accent} size="sm" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.headline, { color: colors.textPrimary }]}>Personalized suggestions</Text>
+                  <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
+                    Free-time suggestions based on your schedule and task estimates
+                  </Text>
+                </View>
               </View>
               <Switch
                 value={personalizedSuggestionsOn}
@@ -213,11 +225,14 @@ export default function ProfileScreen() {
 
           <Card style={{ marginTop: spacing.md }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flex: 1, marginRight: spacing.md }}>
-                <Text style={[typography.headline, { color: colors.textPrimary }]}>Student Mode</Text>
-                <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-                  Track subjects, assignments, and exams on the Life tab
-                </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.md, gap: spacing.sm }}>
+                <IconBadge name="school-outline" color={colors.accent} size="sm" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.headline, { color: colors.textPrimary }]}>Student Mode</Text>
+                  <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
+                    Track subjects, assignments, and exams on the Life tab
+                  </Text>
+                </View>
               </View>
               <Switch
                 value={studentModeOn}
@@ -230,11 +245,14 @@ export default function ProfileScreen() {
           {biometricAvailable ? (
             <Card style={{ marginTop: spacing.md }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flex: 1, marginRight: spacing.md }}>
-                  <Text style={[typography.headline, { color: colors.textPrimary }]}>App lock</Text>
-                  <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-                    Require biometric or passcode to open Anchor
-                  </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.md, gap: spacing.sm }}>
+                  <IconBadge name="lock-closed-outline" color={colors.accent} size="sm" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[typography.headline, { color: colors.textPrimary }]}>App lock</Text>
+                    <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
+                      Require biometric or passcode to open Anchor
+                    </Text>
+                  </View>
                 </View>
                 <Switch
                   value={lockEnabled}
@@ -252,19 +270,27 @@ export default function ProfileScreen() {
                 accessibilityLabel="Delete account"
                 onPress={handleDeleteAccount}
                 disabled={isDeletingAccount}
-                style={({ pressed }) => ({ opacity: pressed || isDeletingAccount ? 0.6 : 1 })}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.sm,
+                  opacity: pressed || isDeletingAccount ? 0.6 : 1,
+                })}
               >
-                <Text style={[typography.headline, { color: colors.danger }]}>
-                  {isDeletingAccount ? 'Deleting…' : 'Delete account'}
-                </Text>
-                <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-                  Permanently deletes your account and all data
-                </Text>
+                <IconBadge name="trash-outline" color={colors.danger} size="sm" />
+                <View style={{ flex: 1 }}>
+                  <Text style={[typography.headline, { color: colors.danger }]}>
+                    {isDeletingAccount ? 'Deleting…' : 'Delete account'}
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
+                    Permanently deletes your account and all data
+                  </Text>
+                </View>
               </Pressable>
             </Card>
           ) : null}
 
-          <View style={{ height: insets.bottom + spacing.xl }} />
+          <View style={{ height: getTabBarClearance(insets.bottom) }} />
         </>
       )}
     </ScrollView>

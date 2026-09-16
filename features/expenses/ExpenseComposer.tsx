@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 import { ExpenseTypeToggle } from '../../components/expenses/ExpenseTypeToggle';
 import { MoneyCategorySelector } from '../../components/expenses/MoneyCategorySelector';
 import { DueDatePicker } from '../../components/tasks/DueDatePicker';
-import { Button, Input, Sheet } from '../../components/ui';
+import { Button, FormSection, Input, Sheet } from '../../components/ui';
 import { useSession } from '../../lib/supabase/useSession';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { ExpenseType, MoneyCategory } from '../../types';
@@ -73,15 +73,13 @@ export function ExpenseComposer() {
           style={{ marginTop: spacing.md, ...typography.largeTitle }}
         />
 
-        <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-          CATEGORY
-        </Text>
-        <MoneyCategorySelector value={category} onChange={setCategory} />
+        <FormSection label="Category" icon="pricetag-outline">
+          <MoneyCategorySelector value={category} onChange={setCategory} />
+        </FormSection>
 
-        <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-          DATE
-        </Text>
-        <DueDatePicker dueDate={date} onChange={(d) => d && setDate(d)} mode="date" label="Set date" />
+        <FormSection label="Date" icon="calendar-outline">
+          <DueDatePicker dueDate={date} onChange={(d) => d && setDate(d)} mode="date" label="Set date" />
+        </FormSection>
 
         <View style={{ marginTop: spacing.md }}>
           <Input placeholder="Notes (optional)" value={notes} onChangeText={setNotes} />

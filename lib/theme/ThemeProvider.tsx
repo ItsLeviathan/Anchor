@@ -1,13 +1,24 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { darkColors, lightColors, radius, spacing, typography, type ThemeColors } from './tokens';
+import {
+  darkColors,
+  darkShadow,
+  lightColors,
+  lightShadow,
+  radius,
+  spacing,
+  typography,
+  type ShadowTokens,
+  type ThemeColors,
+} from './tokens';
 
 interface ThemeContextValue {
   colors: ThemeColors;
   spacing: typeof spacing;
   radius: typeof radius;
   typography: typeof typography;
+  shadow: ShadowTokens;
   scheme: 'light' | 'dark';
 }
 
@@ -23,6 +34,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       spacing,
       radius,
       typography,
+      shadow: scheme === 'dark' ? darkShadow : lightShadow,
       scheme,
     }),
     [scheme]

@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 import type { EveningReview } from '../../lib/insights/eveningReview';
 import { useTheme } from '../../lib/theme/ThemeProvider';
-import { Card } from '../ui';
+import { Card, IconBadge } from '../ui';
 
 interface EveningReviewCardProps {
   review: EveningReview;
@@ -13,8 +13,11 @@ export function EveningReviewCard({ review }: EveningReviewCardProps) {
   const { colors, spacing, typography } = useTheme();
 
   return (
-    <Card style={{ marginBottom: spacing.lg }}>
-      <Text style={[typography.caption, { color: colors.textTertiary }]}>YOUR DAY</Text>
+    <Card elevation="md" style={{ marginBottom: spacing.lg }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <IconBadge name="moon-outline" size="sm" />
+        <Text style={[typography.caption, { color: colors.textTertiary, marginLeft: spacing.sm }]}>YOUR DAY</Text>
+      </View>
       <View style={{ marginTop: spacing.xs, gap: 4 }}>
         <Text style={[typography.body, { color: colors.textPrimary }]}>
           ✓ {review.tasksCompletedToday} {review.tasksCompletedToday === 1 ? 'task' : 'tasks'} completed

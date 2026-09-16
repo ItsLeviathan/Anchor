@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { tintColor } from '../../lib/theme/colorUtils';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { Category } from '../../types';
 
@@ -28,7 +29,10 @@ export function CategoryChipList({ categories, selectedId, onSelect }: CategoryC
               {
                 borderRadius: radius.full,
                 borderColor: selected ? category.color : colors.border,
-                backgroundColor: selected ? colors.accentMuted : colors.surface,
+                // Tinted with the category's own color, not a fixed accent —
+                // otherwise a selected non-green category shows a
+                // color-mismatched border/fill (e.g. purple border, green fill).
+                backgroundColor: selected ? tintColor(category.color, '26') : colors.surface,
               },
             ]}
           >

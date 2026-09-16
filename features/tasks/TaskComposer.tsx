@@ -8,7 +8,7 @@ import { DueDatePicker } from '../../components/tasks/DueDatePicker';
 import { DurationSelector } from '../../components/tasks/DurationSelector';
 import { PrioritySelector } from '../../components/tasks/PrioritySelector';
 import { RecurrenceSelector } from '../../components/tasks/RecurrenceSelector';
-import { Button, Input, Sheet } from '../../components/ui';
+import { Button, FormSection, Input, Sheet } from '../../components/ui';
 import { parseQuickAdd } from '../../lib/ai/quickAddParser';
 import { useSession } from '../../lib/supabase/useSession';
 import { useTheme } from '../../lib/theme/ThemeProvider';
@@ -146,52 +146,31 @@ export function TaskComposer() {
             <Text style={[typography.subhead, { color: colors.accent }]}>More options</Text>
           </Pressable>
         ) : (
-          <View style={{ marginTop: spacing.lg }}>
-            <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.xs }]}>DUE</Text>
-            <DueDatePicker dueDate={dueDate} onChange={handleDueDateChange} />
+          <>
+            <FormSection label="Due" icon="calendar-outline">
+              <DueDatePicker dueDate={dueDate} onChange={handleDueDateChange} />
+            </FormSection>
 
             {dueDate ? (
-              <>
-                <Text
-                  style={[
-                    typography.caption,
-                    { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs },
-                  ]}
-                >
-                  REPEAT
-                </Text>
+              <FormSection label="Repeat" icon="repeat-outline">
                 <RecurrenceSelector value={recurrenceRule} onChange={setRecurrenceRule} />
-              </>
+              </FormSection>
             ) : null}
 
-            <Text
-              style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}
-            >
-              PRIORITY
-            </Text>
-            <PrioritySelector value={priority} onChange={setPriority} />
+            <FormSection label="Priority" icon="flag-outline">
+              <PrioritySelector value={priority} onChange={setPriority} />
+            </FormSection>
 
-            <Text
-              style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}
-            >
-              ESTIMATED TIME
-            </Text>
-            <DurationSelector value={estimatedDurationMinutes} onChange={setEstimatedDurationMinutes} />
+            <FormSection label="Estimated time" icon="time-outline">
+              <DurationSelector value={estimatedDurationMinutes} onChange={setEstimatedDurationMinutes} />
+            </FormSection>
 
             {categories.length > 0 ? (
-              <>
-                <Text
-                  style={[
-                    typography.caption,
-                    { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs },
-                  ]}
-                >
-                  CATEGORY
-                </Text>
+              <FormSection label="Category" icon="pricetag-outline">
                 <CategoryChipList categories={categories} selectedId={categoryId} onSelect={setCategoryId} />
-              </>
+              </FormSection>
             ) : null}
-          </View>
+          </>
         )}
 
         <View style={{ marginTop: spacing.xl }}>

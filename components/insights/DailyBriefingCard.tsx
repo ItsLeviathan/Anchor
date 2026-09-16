@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 import { formatWorkload, type DailyBriefing } from '../../lib/insights/dailyBriefing';
 import { useTheme } from '../../lib/theme/ThemeProvider';
-import { Card } from '../ui';
+import { Card, IconBadge } from '../ui';
 
 interface DailyBriefingCardProps {
   briefing: DailyBriefing;
@@ -30,9 +30,16 @@ export function DailyBriefingCard({ briefing }: DailyBriefingCardProps) {
   if (parts.length === 0) return null;
 
   return (
-    <Card style={{ marginBottom: spacing.lg }}>
-      <Text style={[typography.caption, { color: colors.textTertiary }]}>TODAY YOU HAVE</Text>
-      <Text style={[typography.body, { color: colors.textPrimary, marginTop: spacing.xs }]}>{parts.join(' · ')}</Text>
+    <Card elevation="md" style={{ marginBottom: spacing.lg }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <IconBadge name="sunny-outline" size="sm" />
+        <View style={{ flex: 1, marginLeft: spacing.sm }}>
+          <Text style={[typography.caption, { color: colors.textTertiary }]}>TODAY YOU HAVE</Text>
+          <Text style={[typography.body, { color: colors.textPrimary, marginTop: spacing.xs }]}>
+            {parts.join(' · ')}
+          </Text>
+        </View>
+      </View>
 
       {briefing.mostImportantTask ? (
         <View style={{ marginTop: spacing.sm }}>

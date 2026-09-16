@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 
-import { Sheet } from '../../components/ui';
+import { IconBadge, Sheet } from '../../components/ui';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 
 type AddOptionKey =
@@ -22,24 +22,31 @@ interface AddOption {
   key: AddOptionKey;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
+  /** Kept to two restrained hues (not a color per action) so the grid stays
+   *  calm rather than turning into a rainbow — money-related actions are
+   *  tinted with the same success green used for income elsewhere in the
+   *  app, everything else uses the theme accent. */
+  tone: 'accent' | 'money';
 }
 
 const OPTIONS: AddOption[] = [
-  { key: 'task', label: 'Task', icon: 'checkbox-outline' },
-  { key: 'event', label: 'Event', icon: 'calendar-outline' },
-  { key: 'reminder', label: 'Reminder', icon: 'alarm-outline' },
-  { key: 'note', label: 'Note', icon: 'document-text-outline' },
-  { key: 'expense', label: 'Expense', icon: 'cash-outline' },
-  { key: 'bill', label: 'Bill', icon: 'receipt-outline' },
-  { key: 'habit', label: 'Habit', icon: 'repeat-outline' },
-  { key: 'shopping', label: 'Shopping item', icon: 'cart-outline' },
-  { key: 'document', label: 'Document', icon: 'folder-outline' },
-  { key: 'brain-dump', label: 'Brain Dump', icon: 'flash-outline' },
+  { key: 'task', label: 'Task', icon: 'checkbox-outline', tone: 'accent' },
+  { key: 'event', label: 'Event', icon: 'calendar-outline', tone: 'accent' },
+  { key: 'reminder', label: 'Reminder', icon: 'alarm-outline', tone: 'accent' },
+  { key: 'note', label: 'Note', icon: 'document-text-outline', tone: 'accent' },
+  { key: 'expense', label: 'Expense', icon: 'cash-outline', tone: 'money' },
+  { key: 'bill', label: 'Bill', icon: 'receipt-outline', tone: 'money' },
+  { key: 'habit', label: 'Habit', icon: 'repeat-outline', tone: 'accent' },
+  { key: 'shopping', label: 'Shopping item', icon: 'cart-outline', tone: 'accent' },
+  { key: 'document', label: 'Document', icon: 'folder-outline', tone: 'accent' },
+  { key: 'brain-dump', label: 'Brain Dump', icon: 'flash-outline', tone: 'accent' },
 ];
+
+const NUM_COLUMNS = 3;
 
 export function AddSheet() {
   const router = useRouter();
-  const { colors, spacing, typography, radius } = useTheme();
+  const { colors, spacing, radius, shadow, scheme, typography } = useTheme();
 
   function handleSelect(key: AddOptionKey) {
     if (key === 'task') {
@@ -100,22 +107,37 @@ export function AddSheet() {
       <FlatList
         data={OPTIONS}
         keyExtractor={(item) => item.key}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.xs }} />}
+        numColumns={NUM_COLUMNS}
+        columnWrapperStyle={{ gap: spacing.sm }}
+        ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
         renderItem={({ item }) => (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={item.label}
             onPress={() => handleSelect(item.key)}
             style={({ pressed }) => [
-              styles.row,
               {
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 92,
+                gap: spacing.xs,
                 backgroundColor: colors.surface,
-                borderRadius: radius.md,
-                padding: spacing.md,
+                borderRadius: radius.lg,
+                borderWidth: scheme === 'dark' ? 1 : 0,
+                borderColor: colors.border,
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.xs,
                 opacity: pressed ? 0.7 : 1,
+                ...shadow.sm,
               },
             ]}
           >
-            <Ionicons name={item.icon} size={20} color={colors.accent} />
-            <Text style={[typography.body, { color: colors.textPrimary, marginLeft: spacing.md }]}>
+            <IconBadge name={item.icon} color={item.tone === 'money' ? colors.success : colors.accent} size="md" />
+            <Text
+              style={[typography.caption, { color: colors.textPrimary, textAlign: 'center' }]}
+              numberOfLines={2}
+            >
               {item.label}
             </Text>
           </Pressable>
@@ -124,10 +146,3 @@ export function AddSheet() {
     </Sheet>
   );
 }
-
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-});

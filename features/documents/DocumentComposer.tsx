@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 
 import { DocumentCategorySelector } from '../../components/documents/DocumentCategorySelector';
 import { DueDatePicker } from '../../components/tasks/DueDatePicker';
-import { Button, Input, Sheet } from '../../components/ui';
+import { Button, FormSection, Input, Sheet } from '../../components/ui';
 import { useSession } from '../../lib/supabase/useSession';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { DocumentCategory } from '../../types';
@@ -94,20 +94,17 @@ export function DocumentComposer() {
           <Input placeholder="Name (e.g. Passport)" value={name} onChangeText={setName} />
         </View>
 
-        <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-          CATEGORY
-        </Text>
-        <DocumentCategorySelector value={category} onChange={setCategory} />
+        <FormSection label="Category" icon="pricetag-outline">
+          <DocumentCategorySelector value={category} onChange={setCategory} />
+        </FormSection>
 
-        <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-          ISSUE DATE (OPTIONAL)
-        </Text>
-        <DueDatePicker dueDate={issueDate} onChange={setIssueDate} mode="date" label="Set issue date" />
+        <FormSection label="Issue date (optional)" icon="calendar-outline">
+          <DueDatePicker dueDate={issueDate} onChange={setIssueDate} mode="date" label="Set issue date" />
+        </FormSection>
 
-        <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-          EXPIRATION DATE (OPTIONAL)
-        </Text>
-        <DueDatePicker dueDate={expirationDate} onChange={setExpirationDate} mode="date" label="Set expiration date" />
+        <FormSection label="Expiration date (optional)" icon="calendar-outline">
+          <DueDatePicker dueDate={expirationDate} onChange={setExpirationDate} mode="date" label="Set expiration date" />
+        </FormSection>
 
         <View style={{ marginTop: spacing.md }}>
           <Input placeholder="Notes (optional)" value={notes} onChangeText={setNotes} />

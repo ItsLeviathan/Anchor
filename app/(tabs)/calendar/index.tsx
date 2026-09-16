@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EventRow } from '../../../components/calendar/EventRow';
 import { MonthGrid } from '../../../components/calendar/MonthGrid';
+import { getTabBarClearance } from '../../../components/navigation/tabBarMetrics';
 import { TaskRow } from '../../../components/tasks/TaskRow';
 import { EmptyState, ErrorBoundary } from '../../../components/ui';
 import { useDeleteEvent, useEvents } from '../../../features/events/useEvents';
@@ -75,7 +76,7 @@ export default function CalendarScreen() {
       contentContainerStyle={{
         paddingTop: insets.top + spacing.lg,
         paddingHorizontal: spacing.lg,
-        paddingBottom: spacing.xxl,
+        paddingBottom: getTabBarClearance(insets.bottom),
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -57,7 +57,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row' },
   chip: {
     flex: 1,
-    paddingVertical: 10,
+    minHeight: 44,
+    justifyContent: 'center',
     alignItems: 'center',
     borderWidth: StyleSheet.hairlineWidth,
   },

@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 
 import { AssignmentKindSelector } from '../../components/subjects/AssignmentKindSelector';
 import { DueDatePicker } from '../../components/tasks/DueDatePicker';
-import { Button, Input, Sheet } from '../../components/ui';
+import { Button, FormSection, Input, Sheet } from '../../components/ui';
 import { useSession } from '../../lib/supabase/useSession';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { AssignmentKind } from '../../types';
@@ -71,10 +71,9 @@ export function AssignmentComposer() {
           <Input autoFocus placeholder="Title" value={title} onChangeText={setTitle} />
         </View>
 
-        <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-          DUE
-        </Text>
-        <DueDatePicker dueDate={dueDate} onChange={setDueDate} mode="date" label="Set due date" />
+        <FormSection label="Due" icon="calendar-outline">
+          <DueDatePicker dueDate={dueDate} onChange={setDueDate} mode="date" label="Set due date" />
+        </FormSection>
 
         <View style={{ marginTop: spacing.xl }}>
           <Button label="Save" onPress={handleSave} disabled={!canSave} loading={createAssignment.isPending} />

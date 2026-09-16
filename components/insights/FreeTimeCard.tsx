@@ -1,9 +1,9 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { FreeTimeSuggestion } from '../../lib/insights/freeTime';
 import { useTheme } from '../../lib/theme/ThemeProvider';
-import { Card } from '../ui';
+import { Card, IconBadge } from '../ui';
 
 interface FreeTimeCardProps {
   suggestion: FreeTimeSuggestion;
@@ -24,8 +24,9 @@ export function FreeTimeCard({ suggestion }: FreeTimeCardProps) {
   const durationLabel = hours > 0 ? `${hours}h${mins > 0 ? ` ${mins}m` : ''}` : `${mins} minutes`;
 
   return (
-    <Card style={{ marginBottom: spacing.lg }}>
-      <Text style={[typography.body, { color: colors.textPrimary }]}>
+    <Card elevation="md" style={{ marginBottom: spacing.lg, flexDirection: 'row', alignItems: 'center' }}>
+      <IconBadge name="time-outline" size="sm" />
+      <Text style={[typography.body, { color: colors.textPrimary, flex: 1, marginLeft: spacing.sm }]}>
         You have {durationLabel} free {formatTimeOfDay(slot.start)}. Want to work on{' '}
         <Text style={{ fontWeight: '600' }}>{task.title}</Text>?
       </Text>

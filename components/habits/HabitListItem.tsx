@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { Card } from '../ui/Card';
 import { FadeInView } from '../ui/FadeInView';
 import { computeStreak, isCompletedToday } from '../../lib/habits/streak';
 import { useTheme } from '../../lib/theme/ThemeProvider';
@@ -14,21 +15,13 @@ interface HabitListItemProps {
 }
 
 function HabitListItemInner({ habit, onToggleToday, onDelete }: HabitListItemProps) {
-  const { colors, spacing, radius, typography } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const done = isCompletedToday(habit);
   const streak = computeStreak(habit);
   const unit = habit.frequency === 'daily' ? 'day' : 'week';
 
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderRadius: radius.lg,
-        padding: spacing.md,
-      }}
-    >
+    <Card elevation="sm" style={{ flexDirection: 'row', alignItems: 'center' }}>
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: done }}
@@ -69,7 +62,7 @@ function HabitListItemInner({ habit, onToggleToday, onDelete }: HabitListItemPro
           <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
         </Pressable>
       ) : null}
-    </View>
+    </Card>
   );
 }
 

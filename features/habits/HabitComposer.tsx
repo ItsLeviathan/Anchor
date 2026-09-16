@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { WeekdaySelector } from '../../components/habits/WeekdaySelector';
-import { Button, Input, Sheet } from '../../components/ui';
+import { Button, FormSection, Input, Sheet } from '../../components/ui';
 import { useSession } from '../../lib/supabase/useSession';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { HabitFrequency } from '../../types';
@@ -48,41 +48,37 @@ export function HabitComposer() {
 
       <Input autoFocus placeholder="e.g. Drink water, Read, Stretch" value={name} onChangeText={setName} />
 
-      <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-        FREQUENCY
-      </Text>
-      <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-        {(['daily', 'weekly'] as HabitFrequency[]).map((option) => {
-          const selected = option === frequency;
-          return (
-            <Pressable
-              key={option}
-              onPress={() => setFrequency(option)}
-              style={{
-                flex: 1,
-                paddingVertical: 10,
-                alignItems: 'center',
-                borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: selected ? colors.accent : colors.border,
-                backgroundColor: selected ? colors.accentMuted : colors.surface,
-              }}
-            >
-              <Text style={[typography.subhead, { color: selected ? colors.accent : colors.textSecondary }]}>
-                {option === 'daily' ? 'Every day' : 'Specific days'}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <FormSection label="Frequency" icon="repeat-outline">
+        <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+          {(['daily', 'weekly'] as HabitFrequency[]).map((option) => {
+            const selected = option === frequency;
+            return (
+              <Pressable
+                key={option}
+                onPress={() => setFrequency(option)}
+                style={{
+                  flex: 1,
+                  paddingVertical: 10,
+                  alignItems: 'center',
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: selected ? colors.accent : colors.border,
+                  backgroundColor: selected ? colors.accentMuted : colors.surface,
+                }}
+              >
+                <Text style={[typography.subhead, { color: selected ? colors.accent : colors.textSecondary }]}>
+                  {option === 'daily' ? 'Every day' : 'Specific days'}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </FormSection>
 
       {frequency === 'weekly' ? (
-        <View style={{ marginTop: spacing.md }}>
-          <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.sm }]}>
-            WHICH DAYS
-          </Text>
+        <FormSection label="Which days" icon="calendar-outline">
           <WeekdaySelector value={daysOfWeek} onChange={setDaysOfWeek} />
-        </View>
+        </FormSection>
       ) : null}
 
       <View style={{ marginTop: spacing.xl }}>

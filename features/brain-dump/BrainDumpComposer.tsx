@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
-import { Button, Input, Sheet } from '../../components/ui';
+import { Button, FormSection, Input, Sheet } from '../../components/ui';
 import { parseBrainDumpText, type BrainDumpParsedItem } from '../../lib/braindump/parse';
 import { useSession } from '../../lib/supabase/useSession';
 import { useTheme } from '../../lib/theme/ThemeProvider';
@@ -131,10 +131,7 @@ export function BrainDumpComposer() {
             </Text>
 
             {groupedByCategory.map(([category, categoryItems]) => (
-              <View key={category} style={{ marginBottom: spacing.md }}>
-                <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.xs }]}>
-                  {category.toUpperCase()}
-                </Text>
+              <FormSection key={category} label={category} icon="pricetag-outline" style={{ marginBottom: spacing.md }}>
                 {categoryItems.map((item) => {
                   const globalIndex = items.indexOf(item);
                   return (
@@ -163,7 +160,7 @@ export function BrainDumpComposer() {
                     </Pressable>
                   );
                 })}
-              </View>
+              </FormSection>
             ))}
 
             <Button

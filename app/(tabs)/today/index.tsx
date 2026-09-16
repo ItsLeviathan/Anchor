@@ -9,6 +9,7 @@ import { HabitListItem } from '../../../components/habits/HabitListItem';
 import { DailyBriefingCard } from '../../../components/insights/DailyBriefingCard';
 import { EveningReviewCard } from '../../../components/insights/EveningReviewCard';
 import { FreeTimeCard } from '../../../components/insights/FreeTimeCard';
+import { getTabBarClearance } from '../../../components/navigation/tabBarMetrics';
 import { TaskRow } from '../../../components/tasks/TaskRow';
 import { EmptyState, ErrorBoundary, SyncStatusBadge } from '../../../components/ui';
 import { DailyPlanCard } from '../../../features/ai/DailyPlanCard';
@@ -108,7 +109,7 @@ export default function TodayScreen() {
       contentContainerStyle={{
         paddingTop: insets.top + spacing.lg,
         paddingHorizontal: spacing.lg,
-        paddingBottom: spacing.xxl,
+        paddingBottom: getTabBarClearance(insets.bottom),
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -196,6 +197,7 @@ export default function TodayScreen() {
                   key={category.id}
                   name={category.name}
                   color={category.color}
+                  icon={category.icon}
                   count={categoryCounts.get(category.id) ?? 0}
                 />
               ))}

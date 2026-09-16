@@ -74,3 +74,35 @@ export const typography = {
   subhead: { fontSize: 14, lineHeight: 20, fontWeight: '400' as const },
   caption: { fontSize: 12, lineHeight: 16, fontWeight: '500' as const },
 } as const;
+
+export interface ShadowStyle {
+  shadowColor: string;
+  shadowOpacity: number;
+  shadowRadius: number;
+  shadowOffset: { width: number; height: number };
+  elevation: number;
+}
+
+export interface ShadowTokens {
+  sm: ShadowStyle;
+  md: ShadowStyle;
+  lg: ShadowStyle;
+}
+
+// "Soft elevated": depth comes from layered shadow, not hard borders. Light
+// mode shadows read clearly against the warm off-white background; dark
+// mode shadows barely register against a dark background, so depth there
+// leans more on `surfaceElevated` being visibly lighter than `surface` —
+// these dark shadow values are kept subtle rather than dropped entirely,
+// mainly for Android's shadow-driven elevation tinting.
+export const lightShadow: ShadowTokens = {
+  sm: { shadowColor: '#1C1C1A', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  md: { shadowColor: '#1C1C1A', shadowOpacity: 0.09, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 5 },
+  lg: { shadowColor: '#1C1C1A', shadowOpacity: 0.14, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 9 },
+};
+
+export const darkShadow: ShadowTokens = {
+  sm: { shadowColor: '#000000', shadowOpacity: 0.3, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  md: { shadowColor: '#000000', shadowOpacity: 0.35, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 5 },
+  lg: { shadowColor: '#000000', shadowOpacity: 0.45, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 9 },
+};

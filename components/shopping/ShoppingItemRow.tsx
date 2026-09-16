@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { ShoppingItem } from '../../types';
+import { IconBadge } from '../ui';
 
 interface ShoppingItemRowProps {
   item: ShoppingItem;
@@ -22,6 +23,7 @@ export const ShoppingItemRow = React.memo(function ShoppingItemRow({ item, onTog
         accessibilityLabel={item.isCompleted ? 'Remove from cart' : 'Add to cart'}
         accessibilityHint={item.isCompleted ? 'Marks this item as not yet collected' : 'Marks this item as collected'}
         onPress={() => onToggle(item)}
+        hitSlop={12}
         style={{
           width: 20,
           height: 20,
@@ -36,6 +38,9 @@ export const ShoppingItemRow = React.memo(function ShoppingItemRow({ item, onTog
       >
         {item.isCompleted ? <Ionicons name="checkmark" size={12} color="#FFFFFF" /> : null}
       </Pressable>
+      <View style={{ opacity: item.isCompleted ? 0.5 : 1, marginRight: spacing.sm }}>
+        <IconBadge name="cart-outline" color={item.isCompleted ? colors.textTertiary : colors.accent} size="sm" />
+      </View>
       <Text
         style={[
           typography.body,
@@ -55,7 +60,7 @@ export const ShoppingItemRow = React.memo(function ShoppingItemRow({ item, onTog
         accessibilityLabel="Remove item"
         accessibilityHint="Removes this item from the shopping list"
         onPress={() => onRemove(item)}
-        hitSlop={8}
+        hitSlop={14}
       >
         <Ionicons name="close" size={16} color={colors.textTertiary} />
       </Pressable>

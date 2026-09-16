@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { Card } from '../../components/ui';
+import { Card, IconBadge } from '../../components/ui';
 import { useEvents } from '../events/useEvents';
 import { useHabits } from '../habits/useHabits';
 import { computeDailyPlan } from '../../lib/planning/dailyPlan';
@@ -36,8 +36,13 @@ export function DailyPlanCard({ onFocusTask }: DailyPlanCardProps) {
 
   if (status === 'done' && summary) {
     return (
-      <Card style={{ marginBottom: spacing.lg }}>
-        <Text style={[typography.headline, { color: colors.textPrimary }]}>Today's plan</Text>
+      <Card elevation="md" style={{ marginBottom: spacing.lg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <IconBadge name="sparkles-outline" size="sm" />
+          <Text style={[typography.headline, { color: colors.textPrimary, marginLeft: spacing.sm }]}>
+            Today's plan
+          </Text>
+        </View>
         <Text style={[typography.body, { color: colors.textPrimary, marginTop: spacing.xs }]}>{summary}</Text>
       </Card>
     );
@@ -45,8 +50,13 @@ export function DailyPlanCard({ onFocusTask }: DailyPlanCardProps) {
 
   return (
     <Pressable onPress={handlePlan}>
-      <Card style={{ marginBottom: spacing.lg }}>
-        <Text style={[typography.headline, { color: colors.textPrimary }]}>Plan my day</Text>
+      <Card elevation="md" style={{ marginBottom: spacing.lg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <IconBadge name="sparkles-outline" size="sm" />
+          <Text style={[typography.headline, { color: colors.textPrimary, marginLeft: spacing.sm }]}>
+            Plan my day
+          </Text>
+        </View>
         <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs }]}>
           See what to focus on, based on what's due and scheduled today.
         </Text>

@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Switch, Text, View } from 'react-native';
 
 import { DueDatePicker } from '../../components/tasks/DueDatePicker';
-import { Button, Input, Sheet } from '../../components/ui';
+import { Button, FormSection, Input, Sheet } from '../../components/ui';
 import { findOverlappingEvents } from '../../lib/calendar/conflicts';
 import { useSession } from '../../lib/supabase/useSession';
 import { useTheme } from '../../lib/theme/ThemeProvider';
@@ -121,26 +121,24 @@ export function EventComposer() {
           <Switch value={allDay} onValueChange={setAllDay} trackColor={{ true: colors.accent, false: colors.border }} />
         </View>
 
-        <View style={{ marginTop: spacing.md }}>
-          <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.xs }]}>STARTS</Text>
+        <FormSection label="Starts" icon="calendar-outline">
           <DueDatePicker
             dueDate={start}
             onChange={handleStartChange}
             mode={allDay ? 'date' : 'datetime'}
             label="Set start"
           />
-        </View>
+        </FormSection>
 
         {!allDay ? (
-          <View style={{ marginTop: spacing.md }}>
-            <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.xs }]}>ENDS</Text>
+          <FormSection label="Ends" icon="time-outline">
             <DueDatePicker
               dueDate={end}
               onChange={(date) => date && setEnd(date)}
               mode="datetime"
               label="Set end"
             />
-          </View>
+          </FormSection>
         ) : null}
 
         {conflicts.length > 0 ? (

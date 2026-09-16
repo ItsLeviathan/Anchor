@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
 import { MoneyCategorySelector } from '../../components/expenses/MoneyCategorySelector';
 import { DueDatePicker } from '../../components/tasks/DueDatePicker';
 import { RecurrenceSelector } from '../../components/tasks/RecurrenceSelector';
-import { Button, Input, Sheet } from '../../components/ui';
+import { Button, FormSection, Input, Sheet } from '../../components/ui';
 import { useSession } from '../../lib/supabase/useSession';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { MoneyCategory, RecurrenceRule } from '../../types';
@@ -71,20 +71,17 @@ export function BillComposer() {
           style={{ marginTop: spacing.md }}
         />
 
-        <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-          CATEGORY
-        </Text>
-        <MoneyCategorySelector value={category} onChange={setCategory} />
+        <FormSection label="Category" icon="pricetag-outline">
+          <MoneyCategorySelector value={category} onChange={setCategory} />
+        </FormSection>
 
-        <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-          DUE
-        </Text>
-        <DueDatePicker dueDate={dueDate} onChange={(d) => d && setDueDate(d)} mode="date" label="Set due date" />
+        <FormSection label="Due" icon="calendar-outline">
+          <DueDatePicker dueDate={dueDate} onChange={(d) => d && setDueDate(d)} mode="date" label="Set due date" />
+        </FormSection>
 
-        <Text style={[typography.caption, { color: colors.textTertiary, marginTop: spacing.md, marginBottom: spacing.xs }]}>
-          REPEAT
-        </Text>
-        <RecurrenceSelector value={recurrenceRule} onChange={setRecurrenceRule} />
+        <FormSection label="Repeat" icon="repeat-outline">
+          <RecurrenceSelector value={recurrenceRule} onChange={setRecurrenceRule} />
+        </FormSection>
 
         <View style={{ marginTop: spacing.xl }}>
           <Button label="Add bill" onPress={handleSave} disabled={!canSave} loading={createBill.isPending} />

@@ -5,19 +5,29 @@ import { Alert, Linking, Pressable, Text, View } from 'react-native';
 import { getDocumentSignedUrl } from '../../features/documents/api';
 import { formatExpirationLabel, getExpirationStatus } from '../../lib/documents/expiration';
 import { useTheme } from '../../lib/theme/ThemeProvider';
-import type { AnchorDocument } from '../../types';
+import type { AnchorDocument, DocumentCategory } from '../../types';
+import { Card, IconBadge } from '../ui';
 
 interface DocumentListItemProps {
   document: AnchorDocument;
   onDelete: (document: AnchorDocument) => void;
 }
 
+const CATEGORY_ICONS: Record<DocumentCategory, keyof typeof Ionicons.glyphMap> = {
+  ID: 'card-outline',
+  School: 'school-outline',
+  Certificate: 'ribbon-outline',
+  Contract: 'document-text-outline',
+  Other: 'folder-open-outline',
+};
+
 export const DocumentListItem = React.memo(function DocumentListItem({ document, onDelete }: DocumentListItemProps) {
-  const { colors, spacing, radius, typography } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const [isOpening, setIsOpening] = useState(false);
 
   const status = getExpirationStatus(document.expirationDate);
   const label = formatExpirationLabel(document.expirationDate);
+  const badgeColor = status === 'expired' ? colors.danger : status === 'soon' ? '#D98A3D' : colors.accent;
   const captionColor = status === 'expired' ? colors.danger : status === 'soon' ? '#D98A3D' : colors.textTertiary;
 
   async function handleOpen() {
@@ -41,33 +51,28 @@ export const DocumentListItem = React.memo(function DocumentListItem({ document,
       accessibilityState={{ busy: isOpening }}
       onPress={handleOpen}
       disabled={isOpening}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.surface,
-        borderRadius: radius.lg,
-        padding: spacing.md,
-      }}
     >
-      <Ionicons name="document-text-outline" size={22} color={colors.accent} />
-      <View style={{ flex: 1, marginLeft: spacing.md }}>
-        <Text style={[typography.body, { color: colors.textPrimary }]} numberOfLines={1}>
-          {document.name}
-        </Text>
-        <Text style={[typography.caption, { color: captionColor, marginTop: 2 }]} numberOfLines={1}>
-          {document.category}
-          {label ? ` · ${label}` : ''}
-        </Text>
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Delete document"
-        accessibilityHint="Permanently removes this document"
-        onPress={() => onDelete(document)}
-        hitSlop={8}
-      >
-        <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
-      </Pressable>
+      <Card style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <IconBadge name={CATEGORY_ICONS[document.category] ?? 'folder-open-outline'} color={badgeColor} size="sm" />
+        <View style={{ flex: 1, marginLeft: spacing.md }}>
+          <Text style={[typography.body, { color: colors.textPrimary }]} numberOfLines={1}>
+            {document.name}
+          </Text>
+          <Text style={[typography.caption, { color: captionColor, marginTop: 2 }]} numberOfLines={1}>
+            {document.category}
+            {label ? ` · ${label}` : ''}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Delete document"
+          accessibilityHint="Permanently removes this document"
+          onPress={() => onDelete(document)}
+          hitSlop={13}
+        >
+          <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
+        </Pressable>
+      </Card>
     </Pressable>
   );
 });

@@ -1,10 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { StatRow } from '../../../components/insights/StatRow';
 import { WeeklyReviewCard } from '../../../components/ai/WeeklyReviewCard';
-import { Card, EmptyState, ErrorBoundary } from '../../../components/ui';
+import { getTabBarClearance } from '../../../components/navigation/tabBarMetrics';
+import { Card, EmptyState, ErrorBoundary, IconBadge } from '../../../components/ui';
 import { useCategories } from '../../../features/categories/useCategories';
 import { useEvents } from '../../../features/events/useEvents';
 import { useExpenses } from '../../../features/expenses/useExpenses';
@@ -25,6 +27,22 @@ function formatAvgCompletion(hours: number): string {
 
 function formatPercent(fraction: number): string {
   return `${Math.round(fraction * 100)}%`;
+}
+
+interface SectionHeaderProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  title: string;
+}
+
+function SectionHeader({ icon, color, title }: SectionHeaderProps) {
+  const { colors, spacing, typography } = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+      <IconBadge name={icon} color={color} size="sm" />
+      <Text style={[typography.headline, { color: colors.textPrimary }]}>{title}</Text>
+    </View>
+  );
 }
 
 export default function InsightsScreen() {
@@ -61,7 +79,7 @@ export default function InsightsScreen() {
       contentContainerStyle={{
         paddingTop: insets.top + spacing.lg,
         paddingHorizontal: spacing.lg,
-        paddingBottom: spacing.xxl,
+        paddingBottom: getTabBarClearance(insets.bottom),
       }}
     >
       <Text style={[typography.title, { color: colors.textPrimary, marginBottom: spacing.xs }]}>Insights</Text>
@@ -76,9 +94,7 @@ export default function InsightsScreen() {
           <WeeklyReviewCard />
 
           {/* ---------- Productivity ---------- */}
-          <Text style={[typography.headline, { color: colors.textPrimary, marginBottom: spacing.sm }]}>
-            Productivity
-          </Text>
+          <SectionHeader icon="trending-up-outline" color={colors.accent} title="Productivity" />
           <Card style={{ marginBottom: spacing.lg }}>
             <StatRow label="Tasks completed" value={`${productivity.completedCount} of ${productivity.totalCount}`} />
             <StatRow label="Completion rate" value={formatPercent(productivity.completionRate)} />
@@ -94,7 +110,7 @@ export default function InsightsScreen() {
           </Card>
 
           {/* ---------- Time ---------- */}
-          <Text style={[typography.headline, { color: colors.textPrimary, marginBottom: spacing.sm }]}>Time</Text>
+          <SectionHeader icon="calendar-outline" color={colors.accent} title="Time" />
           <Card style={{ marginBottom: spacing.md }}>
             <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.xs }]}>
               NEXT 7 DAYS
@@ -133,7 +149,7 @@ export default function InsightsScreen() {
           ) : null}
 
           {/* ---------- Money ---------- */}
-          <Text style={[typography.headline, { color: colors.textPrimary, marginBottom: spacing.sm }]}>Money</Text>
+          <SectionHeader icon="cash-outline" color={colors.success} title="Money" />
           <Card style={{ marginBottom: spacing.md }}>
             <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.xs }]}>
               THIS MONTH
@@ -172,7 +188,7 @@ export default function InsightsScreen() {
           </Card>
 
           {/* ---------- Habits ---------- */}
-          <Text style={[typography.headline, { color: colors.textPrimary, marginBottom: spacing.sm }]}>Habits</Text>
+          <SectionHeader icon="repeat-outline" color={colors.accent} title="Habits" />
           {habitInsights.length === 0 ? (
             <EmptyState message="Start a habit to see your consistency here." />
           ) : (

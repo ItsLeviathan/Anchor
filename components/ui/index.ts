@@ -3,6 +3,8 @@ export { Card } from './Card';
 export { EmptyState } from './EmptyState';
 export { ErrorBoundary } from './ErrorBoundary';
 export { FadeInView } from './FadeInView';
+export { FormSection } from './FormSection';
+export { IconBadge } from './IconBadge';
 export { Input } from './Input';
 export { Sheet } from './Sheet';
 export { SyncStatusBadge } from './SyncStatusBadge';

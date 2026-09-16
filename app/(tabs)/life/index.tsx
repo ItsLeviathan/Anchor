@@ -6,12 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BillListItem } from '../../../components/bills/BillListItem';
 import { DocumentListItem } from '../../../components/documents/DocumentListItem';
 import { HabitListItem } from '../../../components/habits/HabitListItem';
+import { getTabBarClearance } from '../../../components/navigation/tabBarMetrics';
 import { NoteListItem } from '../../../components/notes/NoteListItem';
 import { ShoppingItemRow } from '../../../components/shopping/ShoppingItemRow';
 import { SubjectCard } from '../../../components/subjects/SubjectCard';
 import { Card, EmptyState, ErrorBoundary } from '../../../components/ui';
 import { useAssignments, useDeleteAssignment, useToggleAssignmentStatus } from '../../../features/assignments/useAssignments';
 import { useBills, useDeleteBill, useMarkBillPaid } from '../../../features/bills/useBills';
+import { useCategories } from '../../../features/categories/useCategories';
 import { useDeleteDocument, useDocuments } from '../../../features/documents/useDocuments';
 import { useExpenses } from '../../../features/expenses/useExpenses';
 import { useDeleteHabit, useHabits, useToggleHabitToday } from '../../../features/habits/useHabits';
@@ -73,6 +75,8 @@ export default function LifeScreen() {
   const { data: notes = [], isLoading: isNotesLoading } = useNotes(userId);
   const togglePinned = useToggleNotePinned(userId);
   const deleteNote = useDeleteNote(userId);
+  const { data: categories = [] } = useCategories(userId);
+  const categoryById = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories]);
 
   const { data: habits = [], isLoading: isHabitsLoading } = useHabits(userId);
   const toggleHabitToday = useToggleHabitToday(userId);
@@ -120,7 +124,7 @@ export default function LifeScreen() {
       contentContainerStyle={{
         paddingTop: insets.top + spacing.lg,
         paddingHorizontal: spacing.lg,
-        paddingBottom: spacing.xxl,
+        paddingBottom: getTabBarClearance(insets.bottom),
       }}
     >
       <Text style={[typography.title, { color: colors.textPrimary, marginBottom: spacing.lg }]}>Life</Text>
@@ -246,6 +250,7 @@ export default function LifeScreen() {
                 <NoteListItem
                   key={note.id}
                   note={note}
+                  categoryColor={note.categoryId ? categoryById.get(note.categoryId)?.color : undefined}
                   onTogglePin={(n) => togglePinned.mutate(n)}
                   onDelete={(n) => deleteNote.mutate(n.id)}
                 />

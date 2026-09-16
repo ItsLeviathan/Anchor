@@ -4,20 +4,29 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { Note } from '../../types';
+import { Card, IconBadge } from '../ui';
 
 interface NoteListItemProps {
   note: Note;
+  /** Color of the note's category, when known. Falls back to the theme accent. */
+  categoryColor?: string;
   onTogglePin: (note: Note) => void;
   onDelete: (note: Note) => void;
 }
 
-export const NoteListItem = React.memo(function NoteListItem({ note, onTogglePin, onDelete }: NoteListItemProps) {
-  const { colors, spacing, radius, typography } = useTheme();
+export const NoteListItem = React.memo(function NoteListItem({
+  note,
+  categoryColor,
+  onTogglePin,
+  onDelete,
+}: NoteListItemProps) {
+  const { colors, spacing, typography } = useTheme();
 
   return (
-    <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md }}>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <View style={{ flex: 1, marginRight: spacing.sm }}>
+    <Card>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+        <IconBadge name="document-text-outline" color={categoryColor} size="sm" />
+        <View style={{ flex: 1, marginLeft: spacing.sm, marginRight: spacing.sm }}>
           {note.title ? (
             <Text style={[typography.body, { color: colors.textPrimary, fontWeight: '600' }]} numberOfLines={1}>
               {note.title}
@@ -41,7 +50,7 @@ export const NoteListItem = React.memo(function NoteListItem({ note, onTogglePin
               accessibilityLabel={note.isPinned ? 'Unpin note' : 'Pin note'}
               accessibilityHint={note.isPinned ? 'Removes the pin from this note' : 'Pins this note to the top'}
               onPress={() => onTogglePin(note)}
-              hitSlop={8}
+              hitSlop={13}
             >
             <Ionicons
               name={note.isPinned ? 'bookmark' : 'bookmark-outline'}
@@ -54,12 +63,12 @@ export const NoteListItem = React.memo(function NoteListItem({ note, onTogglePin
               accessibilityLabel="Delete note"
               accessibilityHint="Permanently removes this note"
               onPress={() => onDelete(note)}
-              hitSlop={8}
+              hitSlop={13}
             >
             <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
           </Pressable>
         </View>
       </View>
-    </View>
+    </Card>
   );
 });
