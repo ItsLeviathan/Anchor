@@ -80,7 +80,7 @@ export default function CalendarScreen() {
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={[typography.title, { color: colors.textPrimary }]}>Calendar</Text>
+        <Text style={[typography.largeTitle, { color: colors.textPrimary }]}>Calendar</Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Add event"

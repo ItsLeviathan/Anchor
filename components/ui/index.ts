@@ -7,6 +7,7 @@ export { FadeInView } from './FadeInView';
 export { FormSection } from './FormSection';
 export { IconBadge } from './IconBadge';
 export { Input } from './Input';
+export { ListSection } from './ListSection';
 export { Sheet } from './Sheet';
 export { SyncStatusBadge } from './SyncStatusBadge';
 export { ToastContainer } from './Toast';

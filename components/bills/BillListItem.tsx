@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { Bill } from '../../types';
-import { Card, IconBadge } from '../ui';
+import { IconBadge } from '../ui';
 
 interface BillListItemProps {
   bill: Bill;
@@ -33,7 +33,14 @@ export const BillListItem = React.memo(function BillListItem({ bill, onMarkPaid,
   const badgeColor = overdue ? colors.danger : isPaid ? colors.success : colors.accent;
 
   return (
-    <Card style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.sm + 3,
+        paddingHorizontal: spacing.md,
+      }}
+    >
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: isPaid }}
@@ -90,6 +97,6 @@ export const BillListItem = React.memo(function BillListItem({ bill, onMarkPaid,
       >
         <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
       </Pressable>
-    </Card>
+    </View>
   );
 });

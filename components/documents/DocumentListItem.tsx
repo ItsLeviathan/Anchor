@@ -6,7 +6,7 @@ import { getDocumentSignedUrl } from '../../features/documents/api';
 import { formatExpirationLabel, getExpirationStatus } from '../../lib/documents/expiration';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { AnchorDocument, DocumentCategory } from '../../types';
-import { Card, IconBadge } from '../ui';
+import { IconBadge } from '../ui';
 
 interface DocumentListItemProps {
   document: AnchorDocument;
@@ -51,28 +51,32 @@ export const DocumentListItem = React.memo(function DocumentListItem({ document,
       accessibilityState={{ busy: isOpening }}
       onPress={handleOpen}
       disabled={isOpening}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.sm + 3,
+        paddingHorizontal: spacing.md,
+      }}
     >
-      <Card style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <IconBadge name={CATEGORY_ICONS[document.category] ?? 'folder-open-outline'} color={badgeColor} size="sm" />
-        <View style={{ flex: 1, marginLeft: spacing.md }}>
-          <Text style={[typography.body, { color: colors.textPrimary }]} numberOfLines={1}>
-            {document.name}
-          </Text>
-          <Text style={[typography.caption, { color: captionColor, marginTop: 2 }]} numberOfLines={1}>
-            {document.category}
-            {label ? ` · ${label}` : ''}
-          </Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Delete document"
-          accessibilityHint="Permanently removes this document"
-          onPress={() => onDelete(document)}
-          hitSlop={13}
-        >
-          <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
-        </Pressable>
-      </Card>
+      <IconBadge name={CATEGORY_ICONS[document.category] ?? 'folder-open-outline'} color={badgeColor} size="sm" />
+      <View style={{ flex: 1, marginLeft: spacing.md }}>
+        <Text style={[typography.body, { color: colors.textPrimary }]} numberOfLines={1}>
+          {document.name}
+        </Text>
+        <Text style={[typography.caption, { color: captionColor, marginTop: 2 }]} numberOfLines={1}>
+          {document.category}
+          {label ? ` · ${label}` : ''}
+        </Text>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Delete document"
+        accessibilityHint="Permanently removes this document"
+        onPress={() => onDelete(document)}
+        hitSlop={13}
+      >
+        <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
+      </Pressable>
     </Pressable>
   );
 });

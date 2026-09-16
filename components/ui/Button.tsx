@@ -13,7 +13,7 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
 }
 
 export function Button({ label, variant = 'primary', loading, disabled, hint, ...props }: ButtonProps) {
-  const { colors, spacing, radius, shadow, typography } = useTheme();
+  const { colors, spacing, radius, typography } = useTheme();
 
   const backgroundColor =
     variant === 'primary' ? colors.accent : variant === 'secondary' ? colors.surfaceElevated : 'transparent';
@@ -37,10 +37,10 @@ export function Button({ label, variant = 'primary', loading, disabled, hint, ..
           borderRadius: radius.md,
           paddingVertical: spacing.md,
           paddingHorizontal: spacing.lg,
+          // Flat and tinted, not elevated — iOS filled buttons don't carry
+          // a drop shadow (that reads as Material's raised-button
+          // language); emphasis comes purely from the solid fill.
           opacity: pressed ? 0.85 : isDisabled ? 0.5 : 1,
-          // A subtle lift on the primary action only — secondary/ghost stay
-          // flat so they read as lower-emphasis, not just differently colored.
-          ...(variant === 'primary' && !isDisabled ? shadow.sm : null),
         },
       ]}
       {...props}

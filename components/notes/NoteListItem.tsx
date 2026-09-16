@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { Note } from '../../types';
-import { Card, IconBadge } from '../ui';
+import { IconBadge } from '../ui';
 
 interface NoteListItemProps {
   note: Note;
@@ -23,9 +23,15 @@ export const NoteListItem = React.memo(function NoteListItem({
   const { colors, spacing, typography } = useTheme();
 
   return (
-    <Card>
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-        <IconBadge name="document-text-outline" color={categoryColor} size="sm" />
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        paddingVertical: spacing.sm + 3,
+        paddingHorizontal: spacing.md,
+      }}
+    >
+      <IconBadge name="document-text-outline" color={categoryColor} size="sm" />
         <View style={{ flex: 1, marginLeft: spacing.sm, marginRight: spacing.sm }}>
           {note.title ? (
             <Text style={[typography.body, { color: colors.textPrimary, fontWeight: '600' }]} numberOfLines={1}>
@@ -68,7 +74,6 @@ export const NoteListItem = React.memo(function NoteListItem({
             <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
           </Pressable>
         </View>
-      </View>
-    </Card>
+    </View>
   );
 });

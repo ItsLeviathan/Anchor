@@ -11,7 +11,7 @@ import { EveningReviewCard } from '../../../components/insights/EveningReviewCar
 import { FreeTimeCard } from '../../../components/insights/FreeTimeCard';
 import { getTabBarClearance } from '../../../components/navigation/tabBarMetrics';
 import { TaskRow } from '../../../components/tasks/TaskRow';
-import { EmptyState, ErrorBoundary, SyncStatusBadge } from '../../../components/ui';
+import { EmptyState, ErrorBoundary, ListSection, SyncStatusBadge } from '../../../components/ui';
 import { DailyPlanCard } from '../../../features/ai/DailyPlanCard';
 import { useBills } from '../../../features/bills/useBills';
 import { useCategories } from '../../../features/categories/useCategories';
@@ -179,11 +179,11 @@ export default function TodayScreen() {
               <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.xs }]}>
                 HABITS
               </Text>
-              <View style={{ gap: spacing.xs }}>
+              <ListSection>
                 {dueHabits.map((habit) => (
                   <HabitListItem key={habit.id} habit={habit} onToggleToday={(h) => toggleHabitToday.mutate(h)} />
                 ))}
-              </View>
+              </ListSection>
             </View>
           ) : null}
 
@@ -192,15 +192,17 @@ export default function TodayScreen() {
               <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.xs }]}>
                 YOUR LIFE
               </Text>
-              {categoriesWithItems.map((category) => (
-                <CategorySummaryRow
-                  key={category.id}
-                  name={category.name}
-                  color={category.color}
-                  icon={category.icon}
-                  count={categoryCounts.get(category.id) ?? 0}
-                />
-              ))}
+              <ListSection>
+                {categoriesWithItems.map((category) => (
+                  <CategorySummaryRow
+                    key={category.id}
+                    name={category.name}
+                    color={category.color}
+                    icon={category.icon}
+                    count={categoryCounts.get(category.id) ?? 0}
+                  />
+                ))}
+              </ListSection>
             </View>
           ) : null}
         </>

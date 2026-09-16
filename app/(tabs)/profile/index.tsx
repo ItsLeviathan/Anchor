@@ -1,10 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getTabBarClearance } from '../../../components/navigation/tabBarMetrics';
-import { Card, ErrorBoundary, IconBadge } from '../../../components/ui';
+import { Card, ErrorBoundary, IconBadge, ListSection } from '../../../components/ui';
 import { useSetStudentMode, useStudentMode } from '../../../features/studentMode/useStudentMode';
 import { cacheProfile, getCachedProfile, type CachedProfile } from '../../../lib/database/db';
 import { arePersonalizedSuggestionsEnabled, setPersonalizedSuggestionsEnabled } from '../../../lib/insights/preferences';
@@ -15,6 +16,53 @@ import { supabase } from '../../../lib/supabase/client';
 import { useSession } from '../../../lib/supabase/useSession';
 import { useTheme } from '../../../lib/theme/ThemeProvider';
 import { toast } from '../../../lib/toast/toast';
+
+interface SettingsRowProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  label: string;
+  labelColor?: string;
+  description: string;
+  accessory: React.ReactNode;
+  onPress?: () => void;
+  disabled?: boolean;
+}
+
+/** One row of a Settings-style grouped list — regular-weight title (not
+ *  bold; iOS Settings rows aren't semibold), a muted description, and a
+ *  trailing accessory (Switch, or nothing for a plain action row). */
+function SettingsRow({ icon, iconColor, label, labelColor, description, accessory, onPress, disabled }: SettingsRowProps) {
+  const { colors, spacing, typography } = useTheme();
+  const row = (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: spacing.sm + 3,
+        paddingHorizontal: spacing.md,
+        opacity: disabled ? 0.6 : 1,
+      }}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.md, gap: spacing.sm }}>
+        <IconBadge name={icon} color={iconColor ?? colors.accent} size="sm" />
+        <View style={{ flex: 1 }}>
+          <Text style={[typography.body, { color: labelColor ?? colors.textPrimary }]}>{label}</Text>
+          <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>{description}</Text>
+        </View>
+      </View>
+      {accessory}
+    </View>
+  );
+
+  if (!onPress) return row;
+
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} disabled={disabled}>
+      {row}
+    </Pressable>
+  );
+}
 
 export default function ProfileScreen() {
   const { colors, spacing, typography, radius } = useTheme();
@@ -124,7 +172,7 @@ export default function ProfileScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ paddingTop: insets.top + spacing.lg, paddingHorizontal: spacing.lg }}
     >
-      <Text style={[typography.title, { color: colors.textPrimary, marginBottom: spacing.lg }]}>Profile</Text>
+      <Text style={[typography.largeTitle, { color: colors.textPrimary, marginBottom: spacing.lg }]}>Profile</Text>
 
       {isLoading ? (
         <ActivityIndicator color={colors.accent} />
@@ -190,109 +238,72 @@ export default function ProfileScreen() {
             ) : null}
           </Card>
 
-          <Card>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.md, gap: spacing.sm }}>
-                <IconBadge name="notifications-outline" color={colors.accent} size="sm" />
-                <View style={{ flex: 1 }}>
-                  <Text style={[typography.headline, { color: colors.textPrimary }]}>Task & event reminders</Text>
-                  <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-                    Notify me when something is due or about to start
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={remindersOn}
-                onValueChange={handleToggleReminders}
-                trackColor={{ true: colors.accent, false: colors.border }}
-              />
-            </View>
-          </Card>
-
-          <Card style={{ marginTop: spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.md, gap: spacing.sm }}>
-                <IconBadge name="sparkles-outline" color={colors.accent} size="sm" />
-                <View style={{ flex: 1 }}>
-                  <Text style={[typography.headline, { color: colors.textPrimary }]}>Personalized suggestions</Text>
-                  <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-                    Free-time suggestions based on your schedule and task estimates
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={personalizedSuggestionsOn}
-                onValueChange={handleTogglePersonalizedSuggestions}
-                trackColor={{ true: colors.accent, false: colors.border }}
-              />
-            </View>
-          </Card>
-
-          <Card style={{ marginTop: spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.md, gap: spacing.sm }}>
-                <IconBadge name="school-outline" color={colors.accent} size="sm" />
-                <View style={{ flex: 1 }}>
-                  <Text style={[typography.headline, { color: colors.textPrimary }]}>Student Mode</Text>
-                  <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-                    Track subjects, assignments, and exams on the Life tab
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={studentModeOn}
-                onValueChange={(value) => setStudentMode.mutate(value)}
-                trackColor={{ true: colors.accent, false: colors.border }}
-              />
-            </View>
-          </Card>
-
-          {biometricAvailable ? (
-            <Card style={{ marginTop: spacing.md }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: spacing.md, gap: spacing.sm }}>
-                  <IconBadge name="lock-closed-outline" color={colors.accent} size="sm" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[typography.headline, { color: colors.textPrimary }]}>App lock</Text>
-                    <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-                      Require biometric or passcode to open Anchor
-                    </Text>
-                  </View>
-                </View>
+          <ListSection>
+            <SettingsRow
+              icon="notifications-outline"
+              label="Task & event reminders"
+              description="Notify me when something is due or about to start"
+              accessory={
                 <Switch
-                  value={lockEnabled}
-                  onValueChange={handleToggleAppLock}
+                  value={remindersOn}
+                  onValueChange={handleToggleReminders}
                   trackColor={{ true: colors.accent, false: colors.border }}
                 />
-              </View>
-            </Card>
-          ) : null}
+              }
+            />
+            <SettingsRow
+              icon="sparkles-outline"
+              label="Personalized suggestions"
+              description="Free-time suggestions based on your schedule and task estimates"
+              accessory={
+                <Switch
+                  value={personalizedSuggestionsOn}
+                  onValueChange={handleTogglePersonalizedSuggestions}
+                  trackColor={{ true: colors.accent, false: colors.border }}
+                />
+              }
+            />
+            <SettingsRow
+              icon="school-outline"
+              label="Student Mode"
+              description="Track subjects, assignments, and exams on the Life tab"
+              accessory={
+                <Switch
+                  value={studentModeOn}
+                  onValueChange={(value) => setStudentMode.mutate(value)}
+                  trackColor={{ true: colors.accent, false: colors.border }}
+                />
+              }
+            />
+            {biometricAvailable ? (
+              <SettingsRow
+                icon="lock-closed-outline"
+                label="App lock"
+                description="Require biometric or passcode to open Anchor"
+                accessory={
+                  <Switch
+                    value={lockEnabled}
+                    onValueChange={handleToggleAppLock}
+                    trackColor={{ true: colors.accent, false: colors.border }}
+                  />
+                }
+              />
+            ) : null}
+          </ListSection>
 
           {session && !session.user.is_anonymous ? (
-            <Card style={{ marginTop: spacing.md }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Delete account"
+            <ListSection style={{ marginTop: spacing.md }}>
+              <SettingsRow
+                icon="trash-outline"
+                iconColor={colors.danger}
+                label={isDeletingAccount ? 'Deleting…' : 'Delete account'}
+                labelColor={colors.danger}
+                description="Permanently deletes your account and all data"
+                accessory={null}
                 onPress={handleDeleteAccount}
                 disabled={isDeletingAccount}
-                style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: spacing.sm,
-                  opacity: pressed || isDeletingAccount ? 0.6 : 1,
-                })}
-              >
-                <IconBadge name="trash-outline" color={colors.danger} size="sm" />
-                <View style={{ flex: 1 }}>
-                  <Text style={[typography.headline, { color: colors.danger }]}>
-                    {isDeletingAccount ? 'Deleting…' : 'Delete account'}
-                  </Text>
-                  <Text style={[typography.caption, { color: colors.textTertiary, marginTop: 2 }]}>
-                    Permanently deletes your account and all data
-                  </Text>
-                </View>
-              </Pressable>
-            </Card>
+              />
+            </ListSection>
           ) : null}
 
           <View style={{ height: getTabBarClearance(insets.bottom) }} />

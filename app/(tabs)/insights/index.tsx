@@ -82,7 +82,7 @@ export default function InsightsScreen() {
         paddingBottom: getTabBarClearance(insets.bottom),
       }}
     >
-      <Text style={[typography.title, { color: colors.textPrimary, marginBottom: spacing.xs }]}>Insights</Text>
+      <Text style={[typography.largeTitle, { color: colors.textPrimary, marginBottom: spacing.xs }]}>Insights</Text>
       <Text style={[typography.subhead, { color: colors.textSecondary, marginBottom: spacing.lg }]}>
         A quiet look at how things are going - not a scoreboard.
       </Text>

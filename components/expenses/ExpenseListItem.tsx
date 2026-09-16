@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
 import type { Expense } from '../../types';
-import { Card, IconBadge } from '../ui';
+import { IconBadge } from '../ui';
 
 interface ExpenseListItemProps {
   expense: Expense;
@@ -21,7 +21,14 @@ export const ExpenseListItem = React.memo(function ExpenseListItem({ expense, on
   const isIncome = expense.type === 'income';
 
   return (
-    <Card style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.sm + 3,
+        paddingHorizontal: spacing.md,
+      }}
+    >
       <IconBadge
         name={isIncome ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'}
         color={isIncome ? colors.success : colors.textSecondary}
@@ -56,6 +63,6 @@ export const ExpenseListItem = React.memo(function ExpenseListItem({ expense, on
       >
         <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
       </Pressable>
-    </Card>
+    </View>
   );
 });

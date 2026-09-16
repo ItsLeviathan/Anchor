@@ -16,7 +16,14 @@ export const ShoppingItemRow = React.memo(function ShoppingItemRow({ item, onTog
   const { colors, spacing, typography } = useTheme();
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.sm + 3,
+        paddingHorizontal: spacing.md,
+      }}
+    >
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: item.isCompleted }}

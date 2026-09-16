@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -117,45 +118,56 @@ export default function SearchScreen() {
             Nothing found for "{query}"
           </Text>
         ) : (
-          results.map((item) => (
-            <Pressable
-              key={`${item.type}-${item.id}`}
-              accessibilityRole="button"
-              accessibilityLabel={`${TYPE_LABEL[item.type]}: ${item.title}`}
-              style={({ pressed }) => ({
-                flexDirection: 'row',
-                alignItems: 'center',
-                paddingVertical: spacing.sm,
-                paddingHorizontal: spacing.lg,
-                backgroundColor: pressed ? colors.surface : 'transparent',
-                gap: spacing.md,
-              })}
-              onPress={() => router.replace(TYPE_DESTINATION[item.type])}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: radius.sm,
-                  backgroundColor: colors.accentMuted,
+          results.map((item, index) => (
+            <React.Fragment key={`${item.type}-${item.id}`}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${TYPE_LABEL[item.type]}: ${item.title}`}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+                  minHeight: 44,
+                  paddingVertical: spacing.sm,
+                  paddingHorizontal: spacing.lg,
+                  backgroundColor: pressed ? colors.surface : 'transparent',
+                  gap: spacing.md,
+                })}
+                onPress={() => router.replace(TYPE_DESTINATION[item.type])}
               >
-                <Ionicons name={TYPE_ICON[item.type]} size={18} color={colors.accent} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[typography.body, { color: colors.textPrimary }]}
-                  numberOfLines={1}
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: radius.sm,
+                    backgroundColor: colors.accentMuted,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                 >
-                  {item.title}
-                </Text>
-                <Text style={[typography.caption, { color: colors.textTertiary }]}>
-                  {TYPE_LABEL[item.type]} · {item.subtitle}
-                </Text>
-              </View>
-            </Pressable>
+                  <Ionicons name={TYPE_ICON[item.type]} size={18} color={colors.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[typography.body, { color: colors.textPrimary }]}
+                    numberOfLines={1}
+                  >
+                    {item.title}
+                  </Text>
+                  <Text style={[typography.caption, { color: colors.textTertiary }]}>
+                    {TYPE_LABEL[item.type]} · {item.subtitle}
+                  </Text>
+                </View>
+              </Pressable>
+              {index < results.length - 1 ? (
+                <View
+                  style={{
+                    height: StyleSheet.hairlineWidth,
+                    backgroundColor: colors.border,
+                    marginLeft: spacing.lg + 36 + spacing.md,
+                  }}
+                />
+              ) : null}
+            </React.Fragment>
           ))
         )}
 

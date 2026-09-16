@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { Card } from '../ui/Card';
 import { FadeInView } from '../ui/FadeInView';
 import { computeStreak, isCompletedToday } from '../../lib/habits/streak';
 import { useTheme } from '../../lib/theme/ThemeProvider';
@@ -21,7 +20,14 @@ function HabitListItemInner({ habit, onToggleToday, onDelete }: HabitListItemPro
   const unit = habit.frequency === 'daily' ? 'day' : 'week';
 
   return (
-    <Card elevation="sm" style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: spacing.sm + 3,
+        paddingHorizontal: spacing.md,
+      }}
+    >
       <Pressable
         accessibilityRole="checkbox"
         accessibilityState={{ checked: done }}
@@ -62,7 +68,7 @@ function HabitListItemInner({ habit, onToggleToday, onDelete }: HabitListItemPro
           <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
         </Pressable>
       ) : null}
-    </Card>
+    </View>
   );
 }
 

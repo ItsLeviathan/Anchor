@@ -67,7 +67,10 @@ export const darkColors: ThemeColors = {
 };
 
 export const typography = {
-  largeTitle: { fontSize: 32, lineHeight: 38, fontWeight: '700' as const },
+  // Matches iOS's actual nav-bar large-title metrics (34/41, bold) — used
+  // for each tab's own page header so it reads as a native large title
+  // rather than a smaller, Material-style app-bar heading.
+  largeTitle: { fontSize: 34, lineHeight: 41, fontWeight: '700' as const, letterSpacing: -0.4 },
   title: { fontSize: 24, lineHeight: 30, fontWeight: '700' as const },
   headline: { fontSize: 18, lineHeight: 24, fontWeight: '600' as const },
   body: { fontSize: 16, lineHeight: 22, fontWeight: '400' as const },

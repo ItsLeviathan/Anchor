@@ -11,7 +11,7 @@ import { getTabBarClearance } from '../../../components/navigation/tabBarMetrics
 import { NoteListItem } from '../../../components/notes/NoteListItem';
 import { ShoppingItemRow } from '../../../components/shopping/ShoppingItemRow';
 import { SubjectCard } from '../../../components/subjects/SubjectCard';
-import { Card, EmptyState, ErrorBoundary } from '../../../components/ui';
+import { Card, EmptyState, ErrorBoundary, ListSection } from '../../../components/ui';
 import { useAssignments, useDeleteAssignment, useToggleAssignmentStatus } from '../../../features/assignments/useAssignments';
 import { useBills, useDeleteBill, useMarkBillPaid } from '../../../features/bills/useBills';
 import { useCategories } from '../../../features/categories/useCategories';
@@ -130,7 +130,7 @@ export default function LifeScreen() {
         paddingBottom: getTabBarClearance(insets.bottom),
       }}
     >
-      <Text style={[typography.title, { color: colors.textPrimary, marginBottom: spacing.lg }]}>Life</Text>
+      <Text style={[typography.largeTitle, { color: colors.textPrimary, marginBottom: spacing.lg }]}>Life</Text>
 
       {isLoading ? (
         <ActivityIndicator color={colors.accent} />
@@ -177,7 +177,7 @@ export default function LifeScreen() {
           {upcomingBills.length === 0 ? (
             <EmptyState message="No bills due right now." />
           ) : (
-            <View style={{ gap: spacing.xs, marginBottom: spacing.lg }}>
+            <ListSection style={{ marginBottom: spacing.lg }}>
               {upcomingBills.map((bill) => (
                 <BillListItem
                   key={bill.id}
@@ -186,7 +186,7 @@ export default function LifeScreen() {
                   onDelete={(b) => deleteBill.mutate(b.id)}
                 />
               ))}
-            </View>
+            </ListSection>
           )}
 
           <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.sm }]}>
@@ -195,11 +195,11 @@ export default function LifeScreen() {
           {recentExpenses.length === 0 ? (
             <EmptyState message="Expenses you log will show up here." />
           ) : (
-            <View style={{ gap: spacing.xs, marginBottom: spacing.lg }}>
+            <ListSection style={{ marginBottom: spacing.lg }}>
               {recentExpenses.map((expense) => (
                 <ExpenseListItem key={expense.id} expense={expense} onDelete={(e) => deleteExpense.mutate(e.id)} />
               ))}
-            </View>
+            </ListSection>
           )}
 
           {/* ---------- Habits ---------- */}
@@ -207,7 +207,7 @@ export default function LifeScreen() {
           {habits.length === 0 ? (
             <EmptyState message="Start with one small habit." />
           ) : (
-            <View style={{ gap: spacing.xs, marginBottom: spacing.lg }}>
+            <ListSection style={{ marginBottom: spacing.lg }}>
               {habits.map((habit) => (
                 <HabitListItem
                   key={habit.id}
@@ -216,7 +216,7 @@ export default function LifeScreen() {
                   onDelete={(h) => deleteHabit.mutate(h.id)}
                 />
               ))}
-            </View>
+            </ListSection>
           )}
 
           {/* ---------- Shopping ---------- */}
@@ -224,7 +224,7 @@ export default function LifeScreen() {
           {activeShoppingItems.length === 0 && completedShoppingItems.length === 0 ? (
             <EmptyState message="Your shopping list is empty." />
           ) : (
-            <Card style={{ marginBottom: spacing.lg }}>
+            <ListSection style={{ marginBottom: spacing.lg }}>
               {activeShoppingItems.map((item) => (
                 <ShoppingItemRow
                   key={item.id}
@@ -235,7 +235,15 @@ export default function LifeScreen() {
               ))}
               {completedShoppingItems.length > 0 ? (
                 <>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      paddingVertical: spacing.sm,
+                      paddingHorizontal: spacing.md,
+                    }}
+                  >
                     <Text style={[typography.caption, { color: colors.textTertiary }]}>
                       {completedShoppingItems.length} checked off
                     </Text>
@@ -253,7 +261,7 @@ export default function LifeScreen() {
                   ))}
                 </>
               ) : null}
-            </Card>
+            </ListSection>
           )}
 
           {/* ---------- Notes ---------- */}
@@ -261,7 +269,7 @@ export default function LifeScreen() {
           {notes.length === 0 ? (
             <EmptyState message="Your notes will live here." />
           ) : (
-            <View style={{ gap: spacing.xs, marginBottom: spacing.lg }}>
+            <ListSection style={{ marginBottom: spacing.lg }}>
               {notes.map((note) => (
                 <NoteListItem
                   key={note.id}
@@ -271,7 +279,7 @@ export default function LifeScreen() {
                   onDelete={(n) => deleteNote.mutate(n.id)}
                 />
               ))}
-            </View>
+            </ListSection>
           )}
 
           {/* ---------- Documents ---------- */}
@@ -279,11 +287,11 @@ export default function LifeScreen() {
           {documents.length === 0 ? (
             <EmptyState message="Your important documents will live here." />
           ) : (
-            <View style={{ gap: spacing.xs, marginBottom: studentModeOn ? spacing.lg : 0 }}>
+            <ListSection style={{ marginBottom: studentModeOn ? spacing.lg : 0 }}>
               {documents.map((document) => (
                 <DocumentListItem key={document.id} document={document} onDelete={(d) => deleteDocument.mutate(d)} />
               ))}
-            </View>
+            </ListSection>
           )}
 
           {/* ---------- Student ---------- */}

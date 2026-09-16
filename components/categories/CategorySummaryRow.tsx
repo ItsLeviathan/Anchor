@@ -33,7 +33,7 @@ export const CategorySummaryRow = React.memo(function CategorySummaryRow({
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.row, { paddingVertical: spacing.sm, minHeight: 44 }]}
+      style={[styles.row, { paddingVertical: spacing.sm + 3, paddingHorizontal: spacing.md, minHeight: 44 }]}
       accessibilityRole={onPress ? 'button' : undefined}
     >
       {validIcon ? <IconBadge name={validIcon} color={color} size="sm" /> : <View style={[styles.dot, { backgroundColor: color }]} />}

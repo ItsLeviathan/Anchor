@@ -23,6 +23,10 @@ export function EventRow({ event, onDelete }: EventRowProps) {
       })} – ${new Date(event.endAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`;
 
   return (
+    // Kept as its own floating card (not the grouped/inset ListSection
+    // style used elsewhere) because this only ever renders inline with
+    // TaskRow in the Calendar day agenda — the two need to read as
+    // siblings in that mixed, swipeable-primary-action list.
     <Card elevation="sm" style={{ flexDirection: 'row', alignItems: 'center' }}>
       <IconBadge name={event.allDay ? 'calendar-outline' : 'time-outline'} color={colors.accent} size="sm" />
       <View style={{ flex: 1, marginLeft: spacing.md }}>
