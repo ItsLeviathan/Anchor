@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { cancelBillReminder, scheduleBillReminder } from '../../lib/notifications/scheduler';
 import { computeNextDueDate } from '../../lib/tasks/recurrence';
 import type { Bill } from '../../types';
 import { createExpense } from '../expenses/api';
@@ -27,7 +28,11 @@ export function useCreateBill(userId: string | undefined) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createBill,
+    mutationFn: async (input: Parameters<typeof createBill>[0]) => {
+      const created = await createBill(input);
+      scheduleBillReminder(created).catch((err) => console.error('Failed to schedule bill reminder', err));
+      return created;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...BILLS_KEY, userId] });
     },
@@ -46,6 +51,7 @@ export function useMarkBillPaid(userId: string | undefined) {
   return useMutation({
     mutationFn: async (bill: Bill) => {
       const paid = await setBillStatus(bill, 'paid');
+      await cancelBillReminder(bill.id).catch((err) => console.error('Failed to cancel bill reminder', err));
 
       await createExpense({
         userId: bill.userId,
@@ -58,7 +64,7 @@ export function useMarkBillPaid(userId: string | undefined) {
       });
 
       if (bill.recurrenceRule) {
-        await createBill({
+        const nextBill = await createBill({
           userId: bill.userId,
           name: bill.name,
           amount: bill.amount,
@@ -67,6 +73,7 @@ export function useMarkBillPaid(userId: string | undefined) {
           currency: bill.currency,
           recurrenceRule: bill.recurrenceRule,
         });
+        scheduleBillReminder(nextBill).catch((err) => console.error('Failed to schedule next bill reminder', err));
       }
 
       return paid;
@@ -82,7 +89,10 @@ export function useDeleteBill(userId: string | undefined) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteBill,
+    mutationFn: async (id: string) => {
+      await deleteBill(id);
+      await cancelBillReminder(id).catch((err) => console.error('Failed to cancel bill reminder', err));
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...BILLS_KEY, userId] });
     },

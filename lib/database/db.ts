@@ -283,8 +283,10 @@ export async function getCachedProfile(id: string): Promise<CachedProfile | null
  * scheduled notification id lives only in this local table, keyed by
  * entity type so tasks and events can't collide.
  */
+export type ScheduledNotificationEntityType = 'task' | 'event' | 'document' | 'bill';
+
 export async function setScheduledNotificationId(
-  entityType: 'task' | 'event' | 'document',
+  entityType: ScheduledNotificationEntityType,
   entityId: string,
   notificationId: string
 ): Promise<void> {
@@ -298,7 +300,7 @@ export async function setScheduledNotificationId(
 }
 
 export async function getScheduledNotificationId(
-  entityType: 'task' | 'event' | 'document',
+  entityType: ScheduledNotificationEntityType,
   entityId: string
 ): Promise<string | null> {
   const db = await getDb();
@@ -309,12 +311,23 @@ export async function getScheduledNotificationId(
   return row?.notification_id ?? null;
 }
 
-export async function clearScheduledNotificationId(entityType: 'task' | 'event' | 'document', entityId: string): Promise<void> {
+export async function clearScheduledNotificationId(
+  entityType: ScheduledNotificationEntityType,
+  entityId: string
+): Promise<void> {
   const db = await getDb();
   await db.runAsync(`DELETE FROM scheduled_notifications WHERE entity_type = ? AND entity_id = ?;`, [
     entityType,
     entityId,
   ]);
+}
+
+/** Wipes the local id↔notification mapping for every entity type. Paired
+ *  with `Notifications.cancelAllScheduledNotificationsAsync()` when the
+ *  user turns reminders off, so stale ids left behind don't linger. */
+export async function clearAllScheduledNotificationIds(): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(`DELETE FROM scheduled_notifications;`);
 }
 
 /** Small generic key/value store for device-local preferences (e.g. whether reminders are enabled). */

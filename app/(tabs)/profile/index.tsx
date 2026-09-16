@@ -27,7 +27,7 @@ export default function ProfileScreen() {
   const [personalizedSuggestionsOn, setPersonalizedSuggestionsOn] = useState(true);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const { lockEnabled } = useAppLock();
+  const { lockEnabled, setLockEnabled } = useAppLock();
 
   useEffect(() => {
     areRemindersEnabled()
@@ -62,10 +62,15 @@ export default function ProfileScreen() {
   }
 
   async function handleToggleAppLock(value: boolean) {
+    // Optimistic: updates the shared store immediately so the switch and
+    // the enforcement gate in app/_layout.tsx (a separate useAppLock()
+    // instance) both reflect it right away, not just after persisting.
+    setLockEnabled(value);
     try {
       await setAppLockEnabled(value);
     } catch (err) {
       console.error('Failed to save app lock preference', err);
+      setLockEnabled(!value);
     }
   }
 

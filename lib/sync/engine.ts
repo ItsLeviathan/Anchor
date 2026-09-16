@@ -275,11 +275,22 @@ function isRetryableSyncError(err: unknown): boolean {
   return true;
 }
 
+/** Best-effort widget refresh, usable regardless of connectivity - widgets
+ *  read purely local SQLite, so they should reflect a local write
+ *  immediately rather than waiting on a sync flush that may not run for a
+ *  while (or ever, if the device stays offline). */
+function refreshWidgetsBestEffort(): void {
+  import('../widgets/refreshWidgets').then(({ refreshWidgets }) =>
+    refreshWidgets().catch((err) => console.error('Widget refresh failed', err))
+  );
+}
+
 /** Queues a create/update for later replay, immediately reflecting the new count in the sync status UI. */
 export async function enqueueUpsert(entityType: SyncEntityType, entityId: string, payload: Record<string, unknown>) {
   await enqueue(entityType, entityId, 'upsert', payload);
   await refreshPendingCount();
   triggerFlush();
+  refreshWidgetsBestEffort();
 }
 
 /**
@@ -304,6 +315,7 @@ export async function enqueueDelete(entityType: SyncEntityType, entityId: string
 
   await refreshPendingCount();
   triggerFlush();
+  refreshWidgetsBestEffort();
 }
 
 let isFlushing = false;
@@ -345,9 +357,7 @@ export async function flushQueue(): Promise<void> {
     await refreshPendingCount();
     useSyncStore.getState().setSyncing(false);
     isFlushing = false;
-    import('../widgets/refreshWidgets').then(({ refreshWidgets }) =>
-      refreshWidgets().catch((err) => console.error('Widget refresh after flush failed', err))
-    );
+    refreshWidgetsBestEffort();
   }
 }
 

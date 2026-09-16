@@ -74,6 +74,7 @@ export function useCompleteTask(userId: string | undefined) {
           dueTime: task.dueTime,
           priority: task.priority,
           recurrenceRule: task.recurrenceRule,
+          estimatedDurationMinutes: task.estimatedDurationMinutes,
         });
         await scheduleTaskReminder(nextTask).catch((err) => console.error('Failed to schedule next task reminder', err));
       }

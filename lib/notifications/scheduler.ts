@@ -5,7 +5,7 @@ import {
   getScheduledNotificationId,
   setScheduledNotificationId,
 } from '../database/db';
-import type { AnchorDocument, CalendarEvent, Task } from '../../types';
+import type { AnchorDocument, Bill, CalendarEvent, Task } from '../../types';
 import { areRemindersEnabled } from './preferences';
 import { ensureNotificationSetup } from './setup';
 
@@ -15,6 +15,8 @@ const DEFAULT_TASK_REMINDER_TIME = '09:00';
 /** Matches spec section 25's own example: "Driver's license expires in 14 days." */
 const DOCUMENT_EXPIRATION_LEAD_DAYS = 14;
 const DOCUMENT_REMINDER_TIME = '09:00';
+/** Same treatment as a date-only task: a single morning-of reminder. */
+const BILL_REMINDER_TIME = '09:00';
 
 function computeTaskTriggerDate(task: Pick<Task, 'dueDate' | 'dueTime'>): Date | null {
   if (!task.dueDate) return null;
@@ -115,4 +117,35 @@ export async function cancelDocumentExpirationReminder(documentId: string): Prom
 
   await Notifications.cancelScheduledNotificationAsync(notificationId);
   await clearScheduledNotificationId('document', documentId);
+}
+
+export async function scheduleBillReminder(bill: Bill): Promise<void> {
+  await cancelBillReminder(bill.id);
+
+  if (bill.status !== 'unpaid') return;
+  if (!(await areRemindersEnabled())) return;
+
+  const triggerDate = new Date(`${bill.dueDate}T${BILL_REMINDER_TIME}`);
+  if (triggerDate.getTime() <= Date.now()) return;
+
+  const permitted = await ensureNotificationSetup();
+  if (!permitted) return;
+
+  const notificationId = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: bill.name,
+      body: `${bill.currency} ${bill.amount.toFixed(2)} due today`,
+    },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
+  });
+
+  await setScheduledNotificationId('bill', bill.id, notificationId);
+}
+
+export async function cancelBillReminder(billId: string): Promise<void> {
+  const notificationId = await getScheduledNotificationId('bill', billId);
+  if (!notificationId) return;
+
+  await Notifications.cancelScheduledNotificationAsync(notificationId);
+  await clearScheduledNotificationId('bill', billId);
 }

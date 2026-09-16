@@ -22,6 +22,8 @@ const TYPE_ICON: Record<SearchResultType, keyof typeof Ionicons.glyphMap> = {
   document: 'folder-open-outline',
   expense: 'cash-outline',
   habit: 'repeat-outline',
+  subject: 'school-outline',
+  assignment: 'book-outline',
 };
 
 const TYPE_LABEL: Record<SearchResultType, string> = {
@@ -30,6 +32,22 @@ const TYPE_LABEL: Record<SearchResultType, string> = {
   document: 'Document',
   expense: 'Expense',
   habit: 'Habit',
+  subject: 'Subject',
+  assignment: 'Assignment',
+};
+
+// Anchor has no per-item detail/edit screens (see the Life-tab sections and
+// the Today tab) — tapping a result takes you to the tab that lists that
+// item's domain rather than a dead end. Tasks live on Today; everything
+// else surfaces on the Life tab.
+const TYPE_DESTINATION: Record<SearchResultType, '/(tabs)/today' | '/(tabs)/life'> = {
+  task: '/(tabs)/today',
+  note: '/(tabs)/life',
+  document: '/(tabs)/life',
+  expense: '/(tabs)/life',
+  habit: '/(tabs)/life',
+  subject: '/(tabs)/life',
+  assignment: '/(tabs)/life',
 };
 
 export default function SearchScreen() {
@@ -60,7 +78,7 @@ export default function SearchScreen() {
           autoFocus
           value={query}
           onChangeText={setQuery}
-          placeholder="Search tasks, notes, documents…"
+          placeholder="Search tasks, notes, habits, and more…"
           placeholderTextColor={colors.textTertiary}
           style={[typography.body, { flex: 1, color: colors.textPrimary }]}
           returnKeyType="search"
@@ -112,7 +130,7 @@ export default function SearchScreen() {
                 backgroundColor: pressed ? colors.surface : 'transparent',
                 gap: spacing.md,
               })}
-              onPress={() => router.back()}
+              onPress={() => router.replace(TYPE_DESTINATION[item.type])}
             >
               <View
                 style={{

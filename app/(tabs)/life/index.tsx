@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BillListItem } from '../../../components/bills/BillListItem';
 import { DocumentListItem } from '../../../components/documents/DocumentListItem';
+import { ExpenseListItem } from '../../../components/expenses/ExpenseListItem';
 import { HabitListItem } from '../../../components/habits/HabitListItem';
 import { getTabBarClearance } from '../../../components/navigation/tabBarMetrics';
 import { NoteListItem } from '../../../components/notes/NoteListItem';
@@ -15,7 +16,7 @@ import { useAssignments, useDeleteAssignment, useToggleAssignmentStatus } from '
 import { useBills, useDeleteBill, useMarkBillPaid } from '../../../features/bills/useBills';
 import { useCategories } from '../../../features/categories/useCategories';
 import { useDeleteDocument, useDocuments } from '../../../features/documents/useDocuments';
-import { useExpenses } from '../../../features/expenses/useExpenses';
+import { useDeleteExpense, useExpenses } from '../../../features/expenses/useExpenses';
 import { useDeleteHabit, useHabits, useToggleHabitToday } from '../../../features/habits/useHabits';
 import { useDeleteNote, useNotes, useToggleNotePinned } from '../../../features/notes/useNotes';
 import {
@@ -68,6 +69,7 @@ export default function LifeScreen() {
   const userId = session?.user.id;
 
   const { data: expenses = [], isLoading: isExpensesLoading } = useExpenses(userId);
+  const deleteExpense = useDeleteExpense(userId);
   const { data: bills = [], isLoading: isBillsLoading } = useBills(userId);
   const markBillPaid = useMarkBillPaid(userId);
   const deleteBill = useDeleteBill(userId);
@@ -98,6 +100,7 @@ export default function LifeScreen() {
   const deleteAssignment = useDeleteAssignment(userId);
 
   const summary = useMemo(() => computeMonthlySummary(expenses), [expenses]);
+  const recentExpenses = useMemo(() => expenses.slice(0, 8), [expenses]);
   const upcomingBills = useMemo(
     () => bills.filter((bill) => bill.status === 'unpaid').sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
     [bills]
@@ -182,6 +185,19 @@ export default function LifeScreen() {
                   onMarkPaid={(b) => markBillPaid.mutate(b)}
                   onDelete={(b) => deleteBill.mutate(b.id)}
                 />
+              ))}
+            </View>
+          )}
+
+          <Text style={[typography.caption, { color: colors.textTertiary, marginBottom: spacing.sm }]}>
+            RECENT EXPENSES
+          </Text>
+          {recentExpenses.length === 0 ? (
+            <EmptyState message="Expenses you log will show up here." />
+          ) : (
+            <View style={{ gap: spacing.xs, marginBottom: spacing.lg }}>
+              {recentExpenses.map((expense) => (
+                <ExpenseListItem key={expense.id} expense={expense} onDelete={(e) => deleteExpense.mutate(e.id)} />
               ))}
             </View>
           )}

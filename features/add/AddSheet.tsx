@@ -49,7 +49,10 @@ export function AddSheet() {
   const { colors, spacing, radius, shadow, scheme, typography } = useTheme();
 
   function handleSelect(key: AddOptionKey) {
-    if (key === 'task') {
+    if (key === 'task' || key === 'reminder') {
+      // Anchor has no separate "reminder" entity — a reminder is a task
+      // with a due date/time, which is exactly what the task composer
+      // (and its reminder-notification scheduling) already handles.
       // Replace rather than push so we don't stack two modals on top of
       // each other - this reads as one continuous sheet to the user.
       router.replace('/task-new');

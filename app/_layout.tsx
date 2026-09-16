@@ -24,8 +24,27 @@ SplashScreen.preventAutoHideAsync().catch(() => {
   // case there's nothing to keep hidden anyway.
 });
 
+// Cross-fade the native splash into the bootstrap screen instead of a hard
+// cut — both use the same BrandMark, so this reads as one continuous
+// moment rather than a flash between two unrelated screens.
+SplashScreen.setOptions({ duration: 400, fade: true });
+
 function AppContent() {
   const { isLocked, unlock, isAuthenticating, lastError } = useAppLock();
+
+  // The lock screen below is a JS-level overlay sibling to the Stack, not a
+  // navigation-level guard — a natively-presented modal screen (task-new,
+  // add-sheet, etc.) could otherwise render above it instead of being
+  // covered by it. Dismissing any open modal the moment the app locks
+  // closes that gap.
+  useEffect(() => {
+    if (!isLocked) return;
+    try {
+      router.dismissAll();
+    } catch {
+      // Nothing presented to dismiss — fine.
+    }
+  }, [isLocked]);
 
   return (
     <View style={StyleSheet.absoluteFill}>

@@ -1,16 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
+import { useAppLockStore } from '../../store/useAppLockStore';
 import { authenticateWithBiometric, isAppLockEnabled } from './appLock';
 
 // How long the app must be backgrounded before it re-locks (ms).
 const LOCK_AFTER_BACKGROUND_MS = 15_000;
 
 export function useAppLock() {
-  const [isLocked, setIsLocked] = useState(false);
-  const [lockEnabled, setLockEnabled] = useState(false);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [lastError, setLastError] = useState<string | null>(null);
+  const isLocked = useAppLockStore((s) => s.isLocked);
+  const lockEnabled = useAppLockStore((s) => s.lockEnabled);
+  const isAuthenticating = useAppLockStore((s) => s.isAuthenticating);
+  const lastError = useAppLockStore((s) => s.lastError);
   const backgroundedAt = useRef<number | null>(null);
 
   // On mount: read the persisted lock preference and lock immediately if set.
@@ -25,48 +26,62 @@ export function useAppLock() {
   // (which itself fails closed) is what decides whether it goes away.
   useEffect(() => {
     isAppLockEnabled().then((enabled) => {
-      setLockEnabled(enabled);
-      if (enabled) setIsLocked(true);
+      useAppLockStore.getState().setLockEnabled(enabled);
+      if (enabled) useAppLockStore.getState().setIsLocked(true);
     });
   }, []);
 
   // Re-lock after returning from background if the app was away long enough.
+  // Reads lockEnabled fresh from the store rather than closing over the
+  // hook's own value, so this only needs to subscribe once — it still sees
+  // up-to-date toggles made from any other useAppLock() instance (e.g. the
+  // Profile screen).
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state: AppStateStatus) => {
       if (state === 'background' || state === 'inactive') {
         backgroundedAt.current = Date.now();
-      } else if (state === 'active' && lockEnabled) {
+      } else if (state === 'active') {
         const t = backgroundedAt.current;
-        if (t !== null && Date.now() - t > LOCK_AFTER_BACKGROUND_MS) {
-          setIsLocked(true);
+        if (t !== null && useAppLockStore.getState().lockEnabled && Date.now() - t > LOCK_AFTER_BACKGROUND_MS) {
+          useAppLockStore.getState().setIsLocked(true);
         }
         backgroundedAt.current = null;
       }
     });
     return () => sub.remove();
-  }, [lockEnabled]);
+  }, []);
 
   const unlock = useCallback(async () => {
-    if (isAuthenticating) return;
-    setIsAuthenticating(true);
-    setLastError(null);
+    const store = useAppLockStore.getState();
+    if (store.isAuthenticating) return;
+    store.setIsAuthenticating(true);
+    store.setLastError(null);
     try {
       const success = await authenticateWithBiometric();
       if (success) {
-        setIsLocked(false);
+        store.setIsLocked(false);
       } else {
-        setLastError('Authentication failed. Try again.');
+        store.setLastError('Authentication failed. Try again.');
       }
     } catch (err) {
       // authenticateWithBiometric already fails closed and shouldn't throw,
       // but guard here too so an unexpected error can never leave the app
       // unlocked, and so it's surfaced instead of swallowed.
       console.error('App lock unlock attempt failed', err);
-      setLastError('Something went wrong. Try again.');
+      store.setLastError('Something went wrong. Try again.');
     } finally {
-      setIsAuthenticating(false);
+      store.setIsAuthenticating(false);
     }
-  }, [isAuthenticating]);
+  }, []);
 
-  return { isLocked, lockEnabled, unlock, isAuthenticating, lastError };
+  // Updates the shared in-memory setting immediately (so every useAppLock()
+  // consumer — notably the enforcement gate in app/_layout.tsx — reacts
+  // right away) independent of persisting it to SecureStore, which the
+  // caller does separately.
+  const setLockEnabled = useCallback((enabled: boolean) => {
+    useAppLockStore.getState().setLockEnabled(enabled);
+    if (!enabled) useAppLockStore.getState().setIsLocked(false);
+  }, []);
+
+  return { isLocked, lockEnabled, unlock, isAuthenticating, lastError, setLockEnabled };
 }

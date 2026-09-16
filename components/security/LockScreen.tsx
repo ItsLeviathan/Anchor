@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
+import { BrandMark } from '../ui/BrandMark';
 
 interface LockScreenProps {
   onUnlock: () => void;
@@ -28,6 +29,9 @@ export function LockScreen({ onUnlock, isAuthenticating, error }: LockScreenProp
         paddingHorizontal: spacing.xl,
       }}
     >
+      <View style={{ marginBottom: spacing.lg }}>
+        <BrandMark size="md" />
+      </View>
       <Text
         style={[
           typography.largeTitle,

@@ -1,24 +1,71 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button } from '../../components/ui';
-import { Input } from '../../components/ui';
+import { Button, Input } from '../../components/ui';
 import { isAppleSignInAvailable, signInWithApple, signInWithGoogle } from '../../lib/auth/socialAuth';
 import { supabase } from '../../lib/supabase/client';
 import { toast } from '../../lib/toast/toast';
 import { useTheme } from '../../lib/theme/ThemeProvider';
 
+interface SocialButtonProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  loading: boolean;
+  disabled: boolean;
+}
+
+function SocialButton({ icon, label, onPress, loading, disabled }: SocialButtonProps) {
+  const { colors, spacing, radius, typography } = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled, busy: loading }}
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.surface,
+          borderRadius: radius.md,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+          paddingVertical: spacing.sm + 6,
+          gap: spacing.sm,
+          opacity: pressed ? 0.85 : disabled && !loading ? 0.5 : 1,
+        },
+      ]}
+    >
+      {loading ? (
+        <ActivityIndicator color={colors.textPrimary} />
+      ) : (
+        <>
+          <Ionicons name={icon} size={18} color={colors.textPrimary} />
+          <Text style={[typography.subhead, { color: colors.textPrimary }]}>{label}</Text>
+        </>
+      )}
+    </Pressable>
+  );
+}
+
 export default function SignInScreen() {
-  const { colors, spacing, typography, radius } = useTheme();
+  const { colors, spacing, typography } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
@@ -154,52 +201,22 @@ export default function SignInScreen() {
 
         <View style={{ marginTop: spacing.lg, gap: spacing.sm }}>
           {isAppleSignInAvailable() && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Sign in with Apple"
+            <SocialButton
+              icon="logo-apple"
+              label="Sign in with Apple"
               onPress={handleAppleSignIn}
+              loading={socialLoading === 'apple'}
               disabled={socialLoading !== null}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: colors.surface,
-                borderRadius: radius.md,
-                borderWidth: 1,
-                borderColor: colors.border,
-                paddingVertical: spacing.sm + 2,
-                gap: spacing.sm,
-                opacity: socialLoading === 'apple' ? 0.6 : 1,
-              }}
-            >
-              <Text style={[typography.subhead, { color: colors.textPrimary }]}>
-                {socialLoading === 'apple' ? 'Signing in…' : ' Sign in with Apple'}
-              </Text>
-            </Pressable>
+            />
           )}
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Sign in with Google"
+          <SocialButton
+            icon="logo-google"
+            label="Sign in with Google"
             onPress={handleGoogleSignIn}
+            loading={socialLoading === 'google'}
             disabled={socialLoading !== null}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: colors.surface,
-              borderRadius: radius.md,
-              borderWidth: 1,
-              borderColor: colors.border,
-              paddingVertical: spacing.sm + 2,
-              gap: spacing.sm,
-              opacity: socialLoading === 'google' ? 0.6 : 1,
-            }}
-          >
-            <Text style={[typography.subhead, { color: colors.textPrimary }]}>
-              {socialLoading === 'google' ? 'Signing in…' : 'G  Sign in with Google'}
-            </Text>
-          </Pressable>
+          />
         </View>
 
         <Pressable

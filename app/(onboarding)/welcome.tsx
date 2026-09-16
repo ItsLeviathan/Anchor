@@ -1,9 +1,19 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BrandMark, Button, IconBadge } from '../../components/ui';
 import { useTheme } from '../../lib/theme/ThemeProvider';
+import { FadeInView } from '../../components/ui/FadeInView';
+
+const HIGHLIGHTS: { icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
+  { icon: 'checkmark-circle-outline', label: 'Tasks' },
+  { icon: 'calendar-outline', label: 'Calendar' },
+  { icon: 'card-outline', label: 'Bills' },
+  { icon: 'flame-outline', label: 'Habits' },
+];
 
 export default function WelcomeScreen() {
   const { colors, spacing, typography, radius } = useTheme();
@@ -11,111 +21,100 @@ export default function WelcomeScreen() {
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: colors.background,
-          paddingTop: insets.top + spacing.xxl,
-          paddingBottom: insets.bottom + spacing.xl,
-          paddingHorizontal: spacing.xl,
-        },
-      ]}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingTop: insets.top + spacing.xl,
+        paddingBottom: insets.bottom + spacing.xl,
+        paddingHorizontal: spacing.xl,
+      }}
     >
-      <View style={styles.hero}>
-        <Text
-          style={[
-            typography.largeTitle,
-            { color: colors.textPrimary, fontSize: 42, letterSpacing: -1 },
-          ]}
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <FadeInView style={{ alignItems: 'center' }}>
+          <BrandMark size="lg" />
+        </FadeInView>
+
+        <FadeInView delay={80} style={{ alignItems: 'center', marginTop: spacing.lg }}>
+          <Text
+            style={[
+              typography.largeTitle,
+              { color: colors.textPrimary, fontSize: 36, letterSpacing: -1 },
+            ]}
+          >
+            Anchor
+          </Text>
+          <Text
+            style={[
+              typography.headline,
+              { color: colors.accent, marginTop: spacing.xs, textAlign: 'center' },
+            ]}
+          >
+            Keep your life together.
+          </Text>
+        </FadeInView>
+
+        <FadeInView
+          delay={160}
+          style={{
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: spacing.sm,
+            marginTop: spacing.xxl,
+            maxWidth: 320,
+          }}
         >
-          Anchor
-        </Text>
-        <Text
-          style={[
-            typography.headline,
-            { color: colors.accent, marginTop: spacing.xs },
-          ]}
-        >
-          Keep your life together.
-        </Text>
-        <Text
-          style={[
-            typography.body,
-            {
-              color: colors.textSecondary,
-              marginTop: spacing.lg,
-              lineHeight: 24,
-            },
-          ]}
-        >
-          Your tasks, calendar, bills, habits, documents, and notes — all in one calm place.
-        </Text>
+          {HIGHLIGHTS.map((item) => (
+            <View
+              key={item.label}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.xs,
+                backgroundColor: colors.surface,
+                borderWidth: 1,
+                borderColor: colors.border,
+                borderRadius: radius.full,
+                paddingVertical: spacing.xs,
+                paddingRight: spacing.md,
+                paddingLeft: spacing.xs,
+              }}
+            >
+              <IconBadge name={item.icon} size="sm" />
+              <Text style={[typography.subhead, { color: colors.textPrimary }]}>{item.label}</Text>
+            </View>
+          ))}
+        </FadeInView>
       </View>
 
-      <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Get started"
-          accessibilityHint="Opens the app and creates an anonymous account"
-          style={({ pressed }) => [
-            styles.primaryBtn,
-            {
-              backgroundColor: colors.accent,
-              borderRadius: radius.md,
-              paddingVertical: spacing.md + 2,
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}
+      <FadeInView delay={240}>
+        <Button
+          label="Get started"
           onPress={() => router.replace('/(tabs)/today')}
-        >
-          <Text style={[typography.headline, { color: '#FFFFFF', textAlign: 'center' }]}>
-            Get started
-          </Text>
-        </Pressable>
+          hint="Opens the app and creates an anonymous account"
+        />
 
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Sign in"
           accessibilityHint="Opens the sign in screen"
-          style={({ pressed }) => [
-            styles.secondaryBtn,
-            {
-              borderRadius: radius.md,
-              paddingVertical: spacing.md + 2,
-              opacity: pressed ? 0.7 : 1,
-            },
-          ]}
           onPress={() => router.push('/(onboarding)/sign-in')}
+          style={({ pressed }) => [{ marginTop: spacing.lg, opacity: pressed ? 0.6 : 1 }]}
         >
-          <Text
-            style={[typography.headline, { color: colors.textSecondary, textAlign: 'center' }]}
-          >
-            I already have an account
+          <Text style={[typography.subhead, { color: colors.textSecondary, textAlign: 'center' }]}>
+            Already have an account? <Text style={{ color: colors.accent }}>Sign in</Text>
           </Text>
         </Pressable>
-      </View>
 
-      <Text
-        style={[
-          typography.caption,
-          {
-            color: colors.textTertiary,
-            textAlign: 'center',
-            marginTop: spacing.lg,
-            lineHeight: 18,
-          },
-        ]}
-      >
-        No account required to start. Your data is always yours.
-      </Text>
+        <Text
+          style={[
+            typography.caption,
+            { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.md },
+          ]}
+        >
+          No account required to start — your data is always yours.
+        </Text>
+      </FadeInView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  hero: { flex: 1, justifyContent: 'center' },
-  actions: { gap: 12 },
-  primaryBtn: { alignItems: 'center' },
-  secondaryBtn: { alignItems: 'center' },
-});

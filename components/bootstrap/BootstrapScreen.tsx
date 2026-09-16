@@ -1,7 +1,8 @@
 import React from 'react';
-import { ActivityIndicator, Image, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
+import { BrandMark } from '../ui/BrandMark';
 import { Button } from '../ui/Button';
 import { FadeInView } from '../ui/FadeInView';
 
@@ -31,12 +32,9 @@ export function BootstrapScreen({ status, onRetry }: BootstrapScreenProps) {
       }}
     >
       <FadeInView style={{ alignItems: 'center' }}>
-        <Image
-          source={require('../../assets/splash-icon.png')}
-          style={{ width: 72, height: 72, marginBottom: spacing.lg }}
-          resizeMode="contain"
-          accessibilityIgnoresInvertColors
-        />
+        <View style={{ marginBottom: spacing.lg }}>
+          <BrandMark size="md" />
+        </View>
 
         {status === 'loading' ? (
           <ActivityIndicator color={colors.accent} accessibilityLabel="Getting things ready" />
