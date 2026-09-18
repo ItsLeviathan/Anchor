@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Button, FormSection, Input, Sheet } from '../../components/ui';
 import { parseBrainDumpText, type BrainDumpParsedItem } from '../../lib/braindump/parse';
@@ -101,77 +101,75 @@ export function BrainDumpComposer() {
 
   return (
     <Sheet>
-      <ScrollView keyboardShouldPersistTaps="handled">
-        <Text style={[typography.title, { color: colors.textPrimary }]}>Brain Dump</Text>
+      <Text style={[typography.title, { color: colors.textPrimary }]}>Brain Dump</Text>
 
-        {status === 'idle' ? (
-          <>
-            <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.md }]}>
-              Write one thing per line. We'll group them by category.
-            </Text>
-            <Input
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
-              placeholder={'Finish thesis\nBuy groceries\nPay the electricity bill'}
-              value={text}
-              onChangeText={setText}
-              style={{ minHeight: 140 }}
-            />
-            <View style={{ marginTop: spacing.lg }}>
-              <Button label="Organize this" onPress={handleOrganize} disabled={!text.trim()} />
-            </View>
-          </>
-        ) : null}
-
-        {(status === 'preview' || status === 'creating') && items.length > 0 ? (
-          <View style={{ marginTop: spacing.md }}>
-            <Text style={[typography.subhead, { color: colors.textSecondary, marginBottom: spacing.md }]}>
-              I found {items.length} {items.length === 1 ? 'thing' : 'things'}.
-            </Text>
-
-            {groupedByCategory.map(([category, categoryItems]) => (
-              <FormSection key={category} label={category} icon="pricetag-outline" style={{ marginBottom: spacing.md }}>
-                {categoryItems.map((item) => {
-                  const globalIndex = items.indexOf(item);
-                  return (
-                    <Pressable
-                      key={`${item.title}-${globalIndex}`}
-                      onPress={() => toggleItem(globalIndex)}
-                      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs }}
-                    >
-                      <View
-                        style={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: radius.sm,
-                          borderWidth: 2,
-                          borderColor: item.selected ? colors.accent : colors.border,
-                          backgroundColor: item.selected ? colors.accent : 'transparent',
-                          marginRight: spacing.sm,
-                        }}
-                      />
-                      <Text style={[typography.body, { color: colors.textPrimary, flex: 1 }]} numberOfLines={1}>
-                        {item.title}
-                      </Text>
-                      {item.dueDate ? (
-                        <Text style={[typography.caption, { color: colors.textTertiary }]}>{item.dueDate}</Text>
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </FormSection>
-            ))}
-
-            <Button
-              label={status === 'creating' ? 'Adding…' : `Add ${selectedCount} ${selectedCount === 1 ? 'task' : 'tasks'}`}
-              onPress={handleConfirm}
-              disabled={selectedCount === 0 || status === 'creating'}
-              loading={status === 'creating'}
-            />
+      {status === 'idle' ? (
+        <>
+          <Text style={[typography.subhead, { color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.md }]}>
+            Write one thing per line. We'll group them by category.
+          </Text>
+          <Input
+            multiline
+            numberOfLines={6}
+            textAlignVertical="top"
+            placeholder={'Finish thesis\nBuy groceries\nPay the electricity bill'}
+            value={text}
+            onChangeText={setText}
+            style={{ minHeight: 140 }}
+          />
+          <View style={{ marginTop: spacing.lg }}>
+            <Button label="Organize this" onPress={handleOrganize} disabled={!text.trim()} />
           </View>
-        ) : null}
-      </ScrollView>
+        </>
+      ) : null}
+
+      {(status === 'preview' || status === 'creating') && items.length > 0 ? (
+        <View style={{ marginTop: spacing.md }}>
+          <Text style={[typography.subhead, { color: colors.textSecondary, marginBottom: spacing.md }]}>
+            I found {items.length} {items.length === 1 ? 'thing' : 'things'}.
+          </Text>
+
+          {groupedByCategory.map(([category, categoryItems]) => (
+            <FormSection key={category} label={category} icon="pricetag-outline" style={{ marginBottom: spacing.md }}>
+              {categoryItems.map((item) => {
+                const globalIndex = items.indexOf(item);
+                return (
+                  <Pressable
+                    key={`${item.title}-${globalIndex}`}
+                    onPress={() => toggleItem(globalIndex)}
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs }}
+                  >
+                    <View
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: radius.sm,
+                        borderWidth: 2,
+                        borderColor: item.selected ? colors.accent : colors.border,
+                        backgroundColor: item.selected ? colors.accent : 'transparent',
+                        marginRight: spacing.sm,
+                      }}
+                    />
+                    <Text style={[typography.body, { color: colors.textPrimary, flex: 1 }]} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    {item.dueDate ? (
+                      <Text style={[typography.caption, { color: colors.textTertiary }]}>{item.dueDate}</Text>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </FormSection>
+          ))}
+
+          <Button
+            label={status === 'creating' ? 'Adding…' : `Add ${selectedCount} ${selectedCount === 1 ? 'task' : 'tasks'}`}
+            onPress={handleConfirm}
+            disabled={selectedCount === 0 || status === 'creating'}
+            loading={status === 'creating'}
+          />
+        </View>
+      ) : null}
     </Sheet>
   );
 }

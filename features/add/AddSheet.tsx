@@ -103,7 +103,7 @@ export function AddSheet() {
   }
 
   return (
-    <Sheet>
+    <Sheet scroll={false}>
       <Text style={[typography.title, { color: colors.textPrimary, marginBottom: spacing.md }]}>
         Add something
       </Text>

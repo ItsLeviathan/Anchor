@@ -1,9 +1,22 @@
 import React from 'react';
-import { View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { useTheme } from '../../lib/theme/ThemeProvider';
 
-export function Sheet({ children }: { children: React.ReactNode }) {
+interface SheetProps {
+  children: React.ReactNode;
+  /**
+   * Whether the content area scrolls. Defaults to true so every composer
+   * form stays reachable (Save button included) regardless of content
+   * height or keyboard state. Set to false when a child already manages
+   * its own scrolling (e.g. AddSheet's FlatList) - nesting a
+   * same-orientation FlatList inside this ScrollView would trigger RN's
+   * "VirtualizedLists should never be nested" warning and break it.
+   */
+  scroll?: boolean;
+}
+
+export function Sheet({ children, scroll = true }: SheetProps) {
   const { colors, spacing, radius } = useTheme();
 
   return (
@@ -25,7 +38,18 @@ export function Sheet({ children }: { children: React.ReactNode }) {
           marginTop: spacing.sm,
         }}
       />
-      <View style={{ padding: spacing.lg, flex: 1 }}>{children}</View>
+      {scroll ? (
+        <ScrollView
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: spacing.lg }}
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View style={{ padding: spacing.lg, flex: 1 }}>{children}</View>
+      )}
     </View>
   );
 }
