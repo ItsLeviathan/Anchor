@@ -1,0 +1,4 @@
+<resources>
+  <string name="app_name">anchor</string>
+  <string name="widget_todaywidget_description" translatable="false">Your most important task, next event, and nearest deadline.</string>
+</resources>

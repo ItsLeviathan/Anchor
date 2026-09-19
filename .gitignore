@@ -1,14 +1,5 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
-node_modules/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
 # Native
 .kotlin/
 *.orig.*
@@ -18,14 +9,6 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
 # macOS
 .DS_Store
 *.pem
@@ -34,13 +17,38 @@ yarn-error.*
 .env
 .env*.local
 
-# typescript
-*.tsbuildinfo
-
 # generated native folders
-/ios
-/android
+/ios/Flutter/ephemeral
+/android/local.properties
 
 # Supabase CLI local state
 supabase/.temp/
 supabase/.branches/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+*.iml
+*.ipr
+*.iws
+.idea/
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/key.properties
+**/*.keystore
+**/*.jks
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+
+# Legacy Expo/React Native sources kept for reference until deleted
+_legacy_rn/node_modules/
+_legacy_rn/.expo/
