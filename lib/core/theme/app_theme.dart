@@ -22,6 +22,7 @@ ThemeData _build(AppColors c, Brightness b) {
 
   return ThemeData(
     useMaterial3: true,
+    fontFamily: 'Inter',
     brightness: b,
     colorScheme: scheme,
     scaffoldBackgroundColor: c.background,
@@ -30,6 +31,7 @@ ThemeData _build(AppColors c, Brightness b) {
     splashFactory: InkRipple.splashFactory,
     extensions: [c],
     textTheme: Typography.material2021().black.apply(
+          fontFamily: 'Inter',
           bodyColor: c.textPrimary,
           displayColor: c.textPrimary,
         ),

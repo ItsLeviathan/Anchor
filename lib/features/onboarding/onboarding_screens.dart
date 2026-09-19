@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,10 +10,18 @@ import '../../core/theme/tokens.dart';
 import '../../core/utils/toast.dart';
 import '../../core/widgets/ui.dart';
 import 'onboarding_state.dart';
+import 'welcome_hero.dart';
 
 // ============================================================================
 // Welcome
 // ============================================================================
+
+String _guestFailureMessage(Object err) {
+  if (err is AuthException && err.code == 'anonymous_provider_disabled') {
+    return 'Guest mode is unavailable right now. Create an account to continue.';
+  }
+  return 'Couldn’t start. Check your connection and try again.';
+}
 
 class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
@@ -28,10 +37,18 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     try {
       // "Get started" never requires an account: make sure there is an
       // (anonymous) session, e.g. after deleting an account signed us out.
-      if (supabase.auth.currentSession == null) await supabase.auth.signInAnonymously();
+      if (supabase.auth.currentSession == null) {
+        await supabase.auth.signInAnonymously().timeout(const Duration(seconds: 15));
+      }
     } catch (err) {
-      // Non-fatal: Anchor works fully local until a session is available.
+      // Without a session every read and write is scoped to no user, so
+      // entering the app would show a silently broken Today. Stay here and
+      // offer the account route instead.
       debugPrint('Anonymous sign-in failed: $err');
+      if (!mounted) return;
+      setState(() => _starting = false);
+      showToast(_guestFailureMessage(err), ToastType.error);
+      return;
     }
     await setOnboardingComplete();
     ref.read(onboardingCompleteProvider.notifier).markComplete();
@@ -41,74 +58,59 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    const features = [
-      (Icons.check_circle_outline, 'Tasks'),
-      (Icons.calendar_today_outlined, 'Calendar'),
-      (Icons.notes, 'Notes'),
-      (Icons.credit_card_outlined, 'Bills'),
-      (Icons.local_fire_department_outlined, 'Habits'),
-    ];
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(children: [
-            Expanded(
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                const FadeInView(child: BrandMark(size: 96)),
-                const SizedBox(height: AppSpacing.lg),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: c.brandDeep,
+        body: WelcomeBackdrop(
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 FadeInView(
-                  delay: const Duration(milliseconds: 80),
-                  child: Column(children: [
-                    Text('Anchor', style: AppTypography.largeTitle(c.textPrimary).copyWith(fontSize: 36, letterSpacing: -1)),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text('Keep your life together.', textAlign: TextAlign.center, style: AppTypography.headline(c.accent)),
+                  child: Row(children: [
+                    const BrandMark(size: 40),
+                    const SizedBox(width: 10),
+                    Text('Anchor', style: AppTypography.headline(c.onBrand).copyWith(fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
                   ]),
                 ),
-                const SizedBox(height: AppSpacing.xl),
+                Expanded(
+                  child: FadeInView(
+                    delay: const Duration(milliseconds: 120),
+                    child: const Center(
+                      child: FittedBox(fit: BoxFit.scaleDown, child: PreviewCollage()),
+                    ),
+                  ),
+                ),
                 FadeInView(
-                  delay: const Duration(milliseconds: 160),
-                  child: Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.sm,
-                    children: [
-                      for (final (icon, label) in features)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(AppRadius.full), boxShadow: c.softShadow),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(icon, size: 16, color: c.accent),
-                            const SizedBox(width: 6),
-                            Text(label, style: AppTypography.subhead(c.textPrimary)),
-                          ]),
-                        ),
-                    ],
-                  ),
+                  delay: const Duration(milliseconds: 240),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('Your whole life,\nin one calm place.', style: AppTypography.display(c.onBrand)),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Tasks, calendar, bills, notes and habits — private, fast, and always yours.',
+                      style: AppTypography.body(c.onBrand.withValues(alpha: 0.72)),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    AppButton(label: 'Get started', variant: ButtonVariant.brand, loading: _starting, onPressed: _getStarted),
+                    const SizedBox(height: AppSpacing.sm),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => context.push('/sign-in'),
+                        style: TextButton.styleFrom(foregroundColor: c.onBrand, minimumSize: const Size(0, 44)),
+                        child: Text.rich(TextSpan(
+                          text: 'Already have an account? ',
+                          style: AppTypography.subhead(c.onBrand.withValues(alpha: 0.72)),
+                          children: [TextSpan(text: 'Sign in', style: TextStyle(color: c.onBrand, fontWeight: FontWeight.w600))],
+                        )),
+                      ),
+                    ),
+                  ]),
                 ),
               ]),
             ),
-            FadeInView(
-              delay: const Duration(milliseconds: 240),
-              child: Column(children: [
-                AppButton(label: 'Get started', loading: _starting, onPressed: _getStarted),
-                const SizedBox(height: AppSpacing.lg),
-                GestureDetector(
-                  onTap: () => context.push('/sign-in'),
-                  child: Text.rich(
-                    TextSpan(text: 'Already have an account? ', style: AppTypography.subhead(c.textSecondary), children: [
-                      TextSpan(text: 'Sign in', style: TextStyle(color: c.accent)),
-                    ]),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text('No account required to start — your data is always yours.',
-                    textAlign: TextAlign.center, style: AppTypography.caption(c.textTertiary)),
-              ]),
-            ),
-          ]),
+          ),
         ),
       ),
     );

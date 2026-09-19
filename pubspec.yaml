@@ -39,3 +39,7 @@ flutter:
   assets:
     - .env
     - assets/brand-mark.png
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf

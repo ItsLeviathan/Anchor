@@ -168,7 +168,8 @@ class EmptyState extends StatelessWidget {
 // Buttons & inputs
 // ============================================================================
 
-enum ButtonVariant { primary, secondary, danger }
+/// `brand` is the light-on-deep-green button for brand-colored hero screens.
+enum ButtonVariant { primary, secondary, danger, brand }
 
 class AppButton extends StatelessWidget {
   const AppButton({super.key, required this.label, this.onPressed, this.loading = false, this.variant = ButtonVariant.primary, this.expand = true, this.icon});
@@ -185,6 +186,7 @@ class AppButton extends StatelessWidget {
       ButtonVariant.primary => (c.accent, Theme.of(context).colorScheme.onPrimary),
       ButtonVariant.secondary => (c.accentMuted, c.accent),
       ButtonVariant.danger => (tint(c.danger, 0.12), c.danger),
+      ButtonVariant.brand => (c.onBrand, c.brandDeep),
     };
     final disabled = onPressed == null || loading;
 
@@ -193,7 +195,7 @@ class AppButton extends StatelessWidget {
       label: label,
       child: SizedBox(
         width: expand ? double.infinity : null,
-        height: 50,
+        height: variant == ButtonVariant.brand ? 56 : 50,
         child: FilledButton(
           onPressed: disabled ? null : () {
             HapticFeedback.selectionClick();

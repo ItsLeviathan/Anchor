@@ -103,6 +103,24 @@ class AppColors extends ThemeExtension<AppColors> {
         ),
       ];
 
+  /// Brand moments (welcome, paywall) are always deep green, in both themes.
+  Color get brandDeep => Color.lerp(accent, const Color(0xFF000000), 0.72)!;
+  Color get brandMid => Color.lerp(accent, const Color(0xFF000000), 0.5)!;
+  Color get brandGlow => Color.lerp(accent, const Color(0xFFFFFFFF), 0.25)!;
+  Color get onBrand => const Color(0xFFFFFFFF);
+
+  LinearGradient get brandGradient => LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [brandMid, brandDeep, Color.lerp(brandDeep, const Color(0xFF000000), 0.35)!],
+        stops: const [0, 0.55, 1],
+      );
+
+  /// Accent-tinted glow for hero buttons and floating brand elements.
+  List<BoxShadow> get glowShadow => [
+        BoxShadow(color: brandGlow.withValues(alpha: 0.35), blurRadius: 32, offset: const Offset(0, 10)),
+      ];
+
   @override
   AppColors copyWith() => this;
 
@@ -118,6 +136,12 @@ class AppTypography {
       height: 41 / 34,
       fontWeight: FontWeight.w700,
       letterSpacing: -0.4,
+      color: c);
+  static TextStyle display(Color c) => TextStyle(
+      fontSize: 40,
+      height: 1.06,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -1.4,
       color: c);
   static TextStyle title(Color c) =>
       TextStyle(fontSize: 24, height: 30 / 24, fontWeight: FontWeight.w700, color: c);
