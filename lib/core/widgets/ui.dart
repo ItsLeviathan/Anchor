@@ -24,6 +24,7 @@ class AppCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: c.border.withValues(alpha: 0.7), width: 0.6),
         boxShadow: c.softShadow,
       ),
       child: Padding(padding: padding, child: child),
@@ -104,7 +105,12 @@ class ListSection extends StatelessWidget {
       if (header != null)
         Padding(padding: const EdgeInsets.only(left: AppSpacing.md, bottom: AppSpacing.xs), child: Eyebrow(header!)),
       Container(
-        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(AppRadius.lg), boxShadow: c.softShadow),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: c.border.withValues(alpha: 0.7), width: 0.6),
+          boxShadow: c.softShadow,
+        ),
         clipBehavior: Clip.antiAlias,
         child: Column(children: [
           for (var i = 0; i < children.length; i++) ...[
@@ -130,8 +136,8 @@ class IconBadge extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(color: tint(col, 0.14), borderRadius: BorderRadius.circular(size * 0.3)),
-      child: Icon(icon, size: size * 0.55, color: col),
+      decoration: BoxDecoration(color: tint(col, 0.16), borderRadius: BorderRadius.circular(size * 0.36)),
+      child: Icon(icon, size: size * 0.56, color: col),
     );
   }
 }
@@ -149,7 +155,12 @@ class EmptyState extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl, horizontal: AppSpacing.lg),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        IconBadge(icon, size: 56),
+        // Icon sits in a soft ring so empty screens feel designed, not blank.
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(shape: BoxShape.circle, color: c.accentMuted.withValues(alpha: 0.55)),
+          child: IconBadge(icon, size: 64),
+        ),
         const SizedBox(height: AppSpacing.md),
         Text(title, textAlign: TextAlign.center, style: AppTypography.headline(c.textPrimary)),
         if (message != null) ...[
@@ -194,9 +205,17 @@ class AppButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
-      child: SizedBox(
+      child: Container(
         width: expand ? double.infinity : null,
-        height: variant == ButtonVariant.brand ? 56 : 50,
+        height: variant == ButtonVariant.brand ? 58 : 54,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          // Primary actions get a soft coloured glow so they read as the
+          // one thing to press.
+          boxShadow: (variant == ButtonVariant.primary && !disabled)
+              ? [BoxShadow(color: c.accent.withValues(alpha: 0.32), blurRadius: 18, offset: const Offset(0, 6))]
+              : null,
+        ),
         child: FilledButton(
           onPressed: disabled ? null : () {
             HapticFeedback.selectionClick();
@@ -215,7 +234,7 @@ class AppButton extends StatelessWidget {
               ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: fg))
               : Row(mainAxisSize: MainAxisSize.min, children: [
                   if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
-                  Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.1)),
                 ]),
         ),
       ),
@@ -306,6 +325,9 @@ class ChipSelector<T> extends StatelessWidget {
         Builder(builder: (_) {
           final isSel = selected.contains(value);
           final accent = colorFor?.call(value) ?? c.accent;
+          // Selected chips are solid (not a faint tint) so the choice is
+          // unmistakable; text flips to whichever of white/dark reads better.
+          final onAccent = ThemeData.estimateBrightnessForColor(accent) == Brightness.dark ? Colors.white : const Color(0xFF0B1A15);
           return Semantics(
             selected: isSel,
             button: true,
@@ -317,15 +339,15 @@ class ChipSelector<T> extends StatelessWidget {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 120),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: isSel ? tint(accent, 0.16) : c.surface,
+                  color: isSel ? accent : c.surface,
                   borderRadius: BorderRadius.circular(AppRadius.full),
                   border: Border.all(color: isSel ? accent : c.border),
                 ),
                 child: Text(label,
-                    style: AppTypography.subhead(isSel ? accent : c.textSecondary)
-                        .copyWith(fontWeight: isSel ? FontWeight.w600 : FontWeight.w400)),
+                    style: AppTypography.subhead(isSel ? onAccent : c.textSecondary)
+                        .copyWith(fontWeight: isSel ? FontWeight.w700 : FontWeight.w500)),
               ),
             ),
           );
@@ -377,14 +399,26 @@ class ComposerScaffold extends StatelessWidget {
         centerTitle: true,
         title: Text(title, style: AppTypography.headline(c.textPrimary)),
         actions: [
-          TextButton(
-            onPressed: (saving || !canSave) ? null : onSave,
-            child: saving
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(saveLabel,
-                    style: AppTypography.body(canSave ? c.accent : c.textTertiary).copyWith(fontWeight: FontWeight.w600)),
+          // Save is a filled pill so the primary action is obvious.
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.md),
+            child: FilledButton(
+              onPressed: (saving || !canSave) ? null : onSave,
+              style: FilledButton.styleFrom(
+                backgroundColor: c.accent,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                disabledBackgroundColor: c.border,
+                disabledForegroundColor: c.textTertiary,
+                minimumSize: const Size(0, 38),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                shape: const StadiumBorder(),
+                elevation: 0,
+              ),
+              child: saving
+                  ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.onPrimary))
+                  : Text(saveLabel, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            ),
           ),
-          const SizedBox(width: 4),
         ],
       ),
       body: SafeArea(

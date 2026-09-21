@@ -9,7 +9,9 @@ import '../../core/widgets/ui.dart';
 
 /// Height reserved at the bottom of scroll views so content clears the
 /// floating tab bar.
-const double tabBarClearance = 100;
+const double tabBarClearance = 108;
+
+const double _barHeight = 68;
 
 class _Tab {
   const _Tab(this.label, this.icon, this.activeIcon);
@@ -23,12 +25,11 @@ const _tabs = [
   _Tab('Today', Icons.wb_sunny_outlined, Icons.wb_sunny),
   _Tab('Calendar', Icons.calendar_today_outlined, Icons.calendar_today),
   _Tab('Life', Icons.eco_outlined, Icons.eco),
-  _Tab('Insights', Icons.bar_chart_outlined, Icons.bar_chart),
   _Tab('Profile', Icons.person_outline, Icons.person),
 ];
 
-/// Five real tabs (each an indexed branch that keeps its own state) plus a
-/// fake "Add" slot in the middle: it never becomes a branch - tapping it opens
+/// Four real tabs (each an indexed branch that keeps its own state) plus a
+/// fake "Add" slot exactly in the middle (2 + Add + 2): it never becomes a branch - tapping it opens
 /// the add sheet instead of switching tabs.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.shell});
@@ -76,8 +77,33 @@ class _FloatingTabBar extends StatelessWidget {
           child: InkResponse(
             onTap: () => onSelect(branch),
             child: SizedBox(
-              height: 56,
-              child: Icon(selected ? t.activeIcon : t.icon, size: 24, color: selected ? c.accent : c.textTertiary),
+              height: _barHeight,
+              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                // Tinted pill behind the selected icon makes the active tab
+                // obvious at a glance, not just a colour change.
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 52,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: selected ? c.accentMuted : Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Icon(selected ? t.activeIcon : t.icon, size: 22, color: selected ? c.accent : c.textSecondary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  t.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.clip,
+                  style: AppTypography.caption(selected ? c.accent : c.textSecondary).copyWith(
+                    fontSize: 11,
+                    height: 14 / 11,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ]),
             ),
           ),
         ),
@@ -94,11 +120,11 @@ class _FloatingTabBar extends StatelessWidget {
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
             child: Container(
-              height: 60,
+              height: _barHeight,
               decoration: BoxDecoration(
-                color: (isDark ? c.surface : Colors.white).withValues(alpha: 0.78),
+                color: (isDark ? c.surface : Colors.white).withValues(alpha: 0.94),
                 borderRadius: BorderRadius.circular(AppRadius.full),
-                border: Border.all(color: c.border.withValues(alpha: 0.6), width: 0.5),
+                border: Border.all(color: c.border, width: 0.8),
               ),
               child: Row(children: [
                 item(0),
@@ -111,10 +137,12 @@ class _FloatingTabBar extends StatelessWidget {
                       onTap: onAdd,
                       child: Center(
                         child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(shape: BoxShape.circle, color: c.accent, boxShadow: c.mediumShadow),
-                          child: Icon(Icons.add, color: Theme.of(context).colorScheme.onPrimary),
+                          width: 48,
+                          height: 48,
+                          // No shadow: inside the clipped bar it rendered as a
+                          // grey smudge under the button.
+                          decoration: BoxDecoration(shape: BoxShape.circle, color: c.accent),
+                          child: Icon(Icons.add, size: 28, color: Theme.of(context).colorScheme.onPrimary),
                         ),
                       ),
                     ),
@@ -122,7 +150,6 @@ class _FloatingTabBar extends StatelessWidget {
                 ),
                 item(2),
                 item(3),
-                item(4),
               ]),
             ),
           ),

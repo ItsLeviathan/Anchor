@@ -155,6 +155,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ]),
           ),
           const SizedBox(height: AppSpacing.lg),
+          ListSection(header: 'Your data', children: [
+            _SettingsRow(
+              icon: Icons.bar_chart_outlined,
+              label: 'Insights',
+              description: 'Weekly review, productivity, habits and spending',
+              accessory: Icon(Icons.chevron_right, color: context.colors.textTertiary),
+              onTap: () => context.push('/insights'),
+            ),
+          ]),
+          const SizedBox(height: AppSpacing.lg),
           ListSection(header: 'Preferences', children: [
             _SettingsRow(
               icon: Icons.notifications_outlined,

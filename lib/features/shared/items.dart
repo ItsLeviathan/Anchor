@@ -102,6 +102,11 @@ class TaskRow extends StatelessWidget {
       child: AppCard(
         onTap: () => onToggle(task),
         child: Row(children: [
+          // Priority stripe: urgent/high tasks are recognisable before reading.
+          if (!done && (task.priority == 'urgent' || task.priority == 'high')) ...[
+            Container(width: 4, height: 34, decoration: BoxDecoration(color: pColor, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(width: AppSpacing.sm),
+          ],
           Semantics(
             label: done ? 'Mark ${task.title} as pending' : 'Complete ${task.title}',
             button: true,
@@ -112,14 +117,14 @@ class TaskRow extends StatelessWidget {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
-                width: 24,
-                height: 24,
+                width: 28,
+                height: 28,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: pColor, width: 2),
+                  border: Border.all(color: pColor, width: 2.2),
                   color: done ? pColor : Colors.transparent,
                 ),
-                child: done ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
+                child: done ? const Icon(Icons.check_rounded, size: 18, color: Colors.white) : null,
               ),
             ),
           ),
@@ -129,7 +134,7 @@ class TaskRow extends StatelessWidget {
               Text(
                 task.title,
                 style: AppTypography.body(done ? c.textTertiary : c.textPrimary).copyWith(
-                  fontWeight: highlighted ? FontWeight.w600 : FontWeight.w500,
+                  fontWeight: highlighted ? FontWeight.w700 : FontWeight.w600,
                   decoration: done ? TextDecoration.lineThrough : null,
                 ),
               ),
@@ -167,7 +172,7 @@ class EventRow extends StatelessWidget {
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(event.title, style: AppTypography.body(c.textPrimary).copyWith(fontWeight: FontWeight.w500)),
+              Text(event.title, style: AppTypography.body(c.textPrimary).copyWith(fontWeight: FontWeight.w600)),
               Text(time, style: AppTypography.caption(c.textSecondary)),
               if (event.location != null) Text(event.location!, style: AppTypography.caption(c.textTertiary)),
             ]),

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 import 'tokens.dart';
@@ -29,6 +30,11 @@ ThemeData _build(AppColors c, Brightness b) {
     canvasColor: c.background,
     dividerColor: c.border,
     splashFactory: InkRipple.splashFactory,
+    // Smooth slide + edge-swipe-back on Android too.
+    pageTransitionsTheme: const PageTransitionsTheme(builders: {
+      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+    }),
     extensions: [c],
     textTheme: Typography.material2021().black.apply(
           fontFamily: 'Inter',
@@ -40,6 +46,7 @@ ThemeData _build(AppColors c, Brightness b) {
       foregroundColor: c.textPrimary,
       elevation: 0,
       scrolledUnderElevation: 0,
+      titleTextStyle: TextStyle(fontFamily: 'Inter', fontSize: 18, fontWeight: FontWeight.w700, color: c.textPrimary),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -50,7 +57,7 @@ ThemeData _build(AppColors c, Brightness b) {
       border: inputBorder,
       enabledBorder: inputBorder,
       focusedBorder: inputBorder.copyWith(
-        borderSide: BorderSide(color: c.accent, width: 1.5),
+        borderSide: BorderSide(color: c.accent, width: 2),
       ),
     ),
     switchTheme: SwitchThemeData(

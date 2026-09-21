@@ -129,14 +129,17 @@ class _DayCell extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         child: Center(
           child: Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: selected ? c.accent : (today ? c.accentMuted : Colors.transparent),
+              // Today keeps a ring even when another day is selected.
+              border: today && !selected ? Border.all(color: c.accent, width: 1.5) : null,
+              boxShadow: selected ? [BoxShadow(color: c.accent.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 3))] : null,
             ),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text('${cell.date.day}', style: AppTypography.subhead(fg).copyWith(fontWeight: today || selected ? FontWeight.w700 : FontWeight.w400)),
+              Text('${cell.date.day}', style: AppTypography.subhead(fg).copyWith(fontWeight: today || selected ? FontWeight.w800 : FontWeight.w500)),
               if (hasItems)
                 Container(width: 4, height: 4, margin: const EdgeInsets.only(top: 1), decoration: BoxDecoration(shape: BoxShape.circle, color: selected ? fg : c.accent)),
             ]),

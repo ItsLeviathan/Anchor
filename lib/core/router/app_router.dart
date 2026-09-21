@@ -53,9 +53,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(routes: [GoRoute(path: '/today', builder: (_, _) => const TodayScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/calendar', builder: (_, _) => const CalendarScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/life', builder: (_, _) => const LifeScreen())]),
-          StatefulShellBranch(routes: [GoRoute(path: '/insights', builder: (_, _) => const InsightsScreen())]),
           StatefulShellBranch(routes: [GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen())]),
         ],
+      ),
+      // Not a tab (the bar keeps an even 2 + Add + 2 layout so Add is centred);
+      // opened from Profile.
+      GoRoute(
+        path: '/insights',
+        builder: (_, _) => Scaffold(
+          appBar: AppBar(backgroundColor: Colors.transparent, scrolledUnderElevation: 0),
+          body: const InsightsScreen(),
+        ),
       ),
       GoRoute(path: '/welcome', pageBuilder: (_, s) => _fade(s, const WelcomeScreen())),
       GoRoute(path: '/sign-in', pageBuilder: (_, s) => _fade(s, const SignInScreen())),

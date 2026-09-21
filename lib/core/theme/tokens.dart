@@ -15,10 +15,10 @@ class AppSpacing {
 }
 
 class AppRadius {
-  static const double sm = 8;
-  static const double md = 14;
-  static const double lg = 20;
-  static const double xl = 28;
+  static const double sm = 10;
+  static const double md = 16;
+  static const double lg = 22;
+  static const double xl = 32;
   static const double full = 999;
 }
 
@@ -55,44 +55,43 @@ class AppColors extends ThemeExtension<AppColors> {
   final double shadowOpacity;
 
   static const light = AppColors(
-    background: Color(0xFFFAFAF8),
+    // Cool-tinted canvas so pure-white cards lift off it without heavy shadows.
+    background: Color(0xFFF2F5F3),
     surface: Color(0xFFFFFFFF),
     surfaceElevated: Color(0xFFFFFFFF),
-    border: Color(0xFFE7E5E0),
-    textPrimary: Color(0xFF1C1C1A),
-    textSecondary: Color(0xFF6B6B66),
-    textTertiary: Color(0xFF9A9A94),
-    accent: Color(0xFF2F6F5E),
-    accentMuted: Color(0xFFE4EEEA),
-    danger: Color(0xFFC1473C),
-    success: Color(0xFF3D8361),
-    shadow: Color(0xFF1C1C1A),
-    shadowOpacity: 0.09,
+    border: Color(0xFFDFE6E2),
+    textPrimary: Color(0xFF111614),
+    textSecondary: Color(0xFF56635D),
+    textTertiary: Color(0xFF87938D),
+    // Vivid emerald; white text on it stays >= 4.5:1.
+    accent: Color(0xFF0A7F5F),
+    accentMuted: Color(0xFFDAF2E8),
+    danger: Color(0xFFD5433A),
+    success: Color(0xFF1B9A68),
+    shadow: Color(0xFF0F2A21),
+    shadowOpacity: 0.10,
   );
 
   static const dark = AppColors(
-    background: Color(0xFF111110),
-    surface: Color(0xFF1B1B19),
-    surfaceElevated: Color(0xFF222220),
-    border: Color(0xFF2E2E2B),
-    textPrimary: Color(0xFFF2F2EF),
-    textSecondary: Color(0xFFB4B4AE),
-    textTertiary: Color(0xFF7C7C76),
-    accent: Color(0xFF5FA98D),
-    accentMuted: Color(0xFF1E2C27),
-    danger: Color(0xFFE17568),
-    success: Color(0xFF6BBF94),
+    background: Color(0xFF0B0F0E),
+    surface: Color(0xFF151B19),
+    surfaceElevated: Color(0xFF1C2421),
+    border: Color(0xFF27302C),
+    textPrimary: Color(0xFFF4F7F5),
+    textSecondary: Color(0xFFB3BFB9),
+    textTertiary: Color(0xFF7E8B85),
+    accent: Color(0xFF3FD3A0),
+    accentMuted: Color(0xFF15302A),
+    danger: Color(0xFFF0796C),
+    success: Color(0xFF52CF97),
     shadow: Color(0xFF000000),
     shadowOpacity: 0.35,
   );
 
   /// Soft elevated card shadow: depth from layered shadow, not hard borders.
   List<BoxShadow> get softShadow => [
-        BoxShadow(
-          color: shadow.withValues(alpha: shadowOpacity * 0.66),
-          blurRadius: 12,
-          offset: const Offset(0, 2),
-        ),
+        BoxShadow(color: shadow.withValues(alpha: shadowOpacity * 0.5), blurRadius: 2, offset: const Offset(0, 1)),
+        BoxShadow(color: shadow.withValues(alpha: shadowOpacity * 0.7), blurRadius: 20, offset: const Offset(0, 8)),
       ];
 
   List<BoxShadow> get mediumShadow => [
@@ -132,10 +131,10 @@ class AppColors extends ThemeExtension<AppColors> {
 /// iOS-metric type scale (nav-bar large title is 34/41 bold).
 class AppTypography {
   static TextStyle largeTitle(Color c) => TextStyle(
-      fontSize: 34,
-      height: 41 / 34,
-      fontWeight: FontWeight.w700,
-      letterSpacing: -0.4,
+      fontSize: 36,
+      height: 42 / 36,
+      fontWeight: FontWeight.w800,
+      letterSpacing: -1.0,
       color: c);
   static TextStyle display(Color c) => TextStyle(
       fontSize: 40,
@@ -144,15 +143,15 @@ class AppTypography {
       letterSpacing: -1.4,
       color: c);
   static TextStyle title(Color c) =>
-      TextStyle(fontSize: 24, height: 30 / 24, fontWeight: FontWeight.w700, color: c);
+      TextStyle(fontSize: 26, height: 32 / 26, fontWeight: FontWeight.w800, letterSpacing: -0.5, color: c);
   static TextStyle headline(Color c) =>
-      TextStyle(fontSize: 18, height: 24 / 18, fontWeight: FontWeight.w600, color: c);
+      TextStyle(fontSize: 19, height: 25 / 19, fontWeight: FontWeight.w700, letterSpacing: -0.2, color: c);
   static TextStyle body(Color c) =>
       TextStyle(fontSize: 16, height: 22 / 16, fontWeight: FontWeight.w400, color: c);
   static TextStyle subhead(Color c) =>
       TextStyle(fontSize: 14, height: 20 / 14, fontWeight: FontWeight.w400, color: c);
   static TextStyle caption(Color c) =>
-      TextStyle(fontSize: 12, height: 16 / 12, fontWeight: FontWeight.w500, color: c);
+      TextStyle(fontSize: 12, height: 16 / 12, fontWeight: FontWeight.w600, color: c);
 }
 
 extension AppThemeContext on BuildContext {
