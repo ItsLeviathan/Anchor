@@ -184,6 +184,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       appBar: AppBar(),
       body: SafeArea(
         child: ListView(padding: const EdgeInsets.all(AppSpacing.lg), children: [
+          const Align(alignment: Alignment.centerLeft, child: BrandMark(size: 60)),
+          const SizedBox(height: AppSpacing.lg),
           Text('Welcome back', style: AppTypography.largeTitle(c.textPrimary)),
           const SizedBox(height: AppSpacing.xs),
           Text('Sign in to sync your data across devices.', style: AppTypography.subhead(c.textSecondary)),
@@ -286,6 +288,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       appBar: AppBar(),
       body: SafeArea(
         child: ListView(padding: const EdgeInsets.all(AppSpacing.lg), children: [
+          const Align(alignment: Alignment.centerLeft, child: BrandMark(size: 60)),
+          const SizedBox(height: AppSpacing.lg),
           Text('Create your account', style: AppTypography.largeTitle(c.textPrimary)),
           const SizedBox(height: AppSpacing.xs),
           Text('Keep your data safe and synced. Everything you\'ve added so far comes with you.', style: AppTypography.subhead(c.textSecondary)),

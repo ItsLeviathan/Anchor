@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/brand/anchor_logo.dart';
 import '../../core/data/repository.dart' as repo;
 import '../../core/db/database.dart';
 import '../../core/logic/logic.dart';
@@ -12,7 +13,9 @@ import '../../core/theme/tokens.dart';
 import '../../core/utils/dates.dart';
 import '../../core/utils/toast.dart';
 import '../../core/widgets/ui.dart';
+import '../shared/guest_upsell.dart';
 import '../shared/items.dart';
+import 'today_widgets.dart';
 
 const _eveningHour = 18;
 const _personalizedKey = 'personalized_suggestions_enabled';
@@ -31,6 +34,17 @@ String _greeting(DateTime now) {
   return 'Good evening';
 }
 
+/// One short line for the hero. The counts live in the stat pills, so this
+/// says what's left and how heavy it is instead of repeating them.
+String _summary({required int done, required int total, required int workloadMinutes}) {
+  if (total == 0) return 'A clear day. Enjoy the space, or get ahead on something.';
+  if (done >= total) return 'Everything’s done. Nicely handled.';
+  final left = total - done;
+  final workload = formatWorkload(workloadMinutes);
+  final base = '$left ${left == 1 ? 'thing' : 'things'} left today';
+  return workload.isEmpty ? '$base.' : '$base · about $workload of work.';
+}
+
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
   @override
@@ -44,6 +58,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   Future<void> _delete(Task t) async {
     if (await confirmDelete(context, 'task')) await repo.deleteTask(t.id).catchError(toastError);
+  }
+
+  Future<void> _deleteHabit(Habit h) async {
+    if (await confirmDelete(context, 'habit')) await repo.deleteHabit(h.id).catchError(toastError);
   }
 
   @override
@@ -66,54 +84,59 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final catColor = {for (final cat in categories) cat.id: parseHex(cat.color, c.accent)};
     final isEvening = now.hour >= _eveningHour;
 
+    // Day progress: tasks and habits completed out of everything planned today.
+    final total = review.tasksCompletedToday + review.stillPendingCount + briefing.habitCount;
+    final done = (review.tasksCompletedToday + review.habitsCompletedToday).clamp(0, total);
+
+    // Skip the free-time line when it names the task the plan already leads
+    // with, so one task isn't repeated three times down the screen.
+    final freeTime = suggestion == null || suggestion.task.id == plan.focusTaskId
+        ? null
+        : 'You have ${formatWorkload(suggestion.slot.minutes)} free from ${formatTime(suggestion.slot.start)}. '
+            '"${suggestion.task.title}" (${formatWorkload(suggestion.task.estimatedDurationMinutes!)}) would fit.';
+
     return SafeArea(
       bottom: false,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 120),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 120),
         children: [
           Row(children: [
+            const Padding(padding: EdgeInsets.only(left: 4, right: AppSpacing.sm), child: AnchorLogo(size: 30, shadow: false)),
             const Expanded(child: SyncStatusBadge()),
-            IconButton(tooltip: 'Search', icon: const Icon(Icons.search), onPressed: () => context.push('/search')),
+            IconButton(tooltip: 'Search', icon: const Icon(Icons.search_rounded), onPressed: () => context.push('/search')),
           ]),
-          Eyebrow(formatLongDate(now)),
           const SizedBox(height: AppSpacing.xs),
-          LargeTitle(_greeting(now)),
-
-          _BriefingCard(briefing: briefing),
-          const SizedBox(height: AppSpacing.md),
-          AppCard(
-            onTap: plan.focusTaskId == null ? null : () => setState(() => _focusTaskId = plan.focusTaskId),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const IconBadge(Icons.auto_awesome_outlined),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Eyebrow('Daily plan'),
-                  const SizedBox(height: 2),
-                  Text(plan.summary, style: AppTypography.body(c.textPrimary)),
-                ]),
-              ),
-            ]),
+          FadeInView(
+            child: TodayHero(
+              date: formatLongDate(now),
+              greeting: _greeting(now),
+              summary: _summary(done: done, total: total, workloadMinutes: briefing.estimatedWorkloadMinutes),
+              done: done,
+              total: total,
+              stats: [
+                HeroStat(Icons.check_circle_outline_rounded, briefing.importantTaskCount, 'Tasks'),
+                HeroStat(Icons.event_outlined, briefing.appointmentCount, 'Events'),
+                HeroStat(Icons.receipt_long_outlined, briefing.upcomingBillCount, 'Bills due'),
+              ],
+              focusTitle: briefing.mostImportantTask?.title,
+              onFocusTap: plan.focusTaskId == null ? null : () => setState(() => _focusTaskId = plan.focusTaskId),
+            ),
           ),
 
-          if (suggestion != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            AppCard(
-              child: Row(children: [
-                const IconBadge(Icons.hourglass_bottom_outlined),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Text(
-                    'You have ${formatWorkload(suggestion.slot.minutes)} free from ${formatTime(suggestion.slot.start)}. '
-                    '"${suggestion.task.title}" (${formatWorkload(suggestion.task.estimatedDurationMinutes!)}) would fit.',
-                    style: AppTypography.subhead(c.textPrimary),
-                  ),
-                ),
-              ]),
-            ),
-          ],
+          const SizedBox(height: AppSpacing.md),
+          const GuestUpsellCard(),
 
-          const SectionHeader('Focus'),
+          if (todayTasks.isNotEmpty)
+            FadeInView(
+              delay: const Duration(milliseconds: 90),
+              child: SuggestionCard(
+                plan: plan.summary,
+                freeTime: freeTime,
+                onTap: plan.focusTaskId == null ? null : () => setState(() => _focusTaskId = plan.focusTaskId),
+              ),
+            ),
+
+          SectionHeader('Focus', actionLabel: 'Add task', onAction: () => context.push('/task-new')),
           if (todayTasks.isEmpty)
             EmptyState(
               icon: Icons.wb_sunny_outlined,
@@ -126,75 +149,29 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             for (final t in todayTasks)
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: TaskRow(task: t, categoryColor: catColor[t.categoryId], highlighted: t.id == _focusTaskId, onToggle: _toggle, onDelete: _delete),
+                child: TaskRow(
+                    task: t,
+                    categoryColor: catColor[t.categoryId],
+                    highlighted: t.id == _focusTaskId,
+                    onToggle: _toggle,
+                    onDelete: _delete),
               ),
 
           if (dueHabits.isNotEmpty) ...[
-            const SectionHeader('Habits'),
-            for (final h in dueHabits)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: HabitListItem(
-                  habit: h,
-                  onToggle: (x) => repo.toggleHabitToday(x).catchError(toastError),
-                  onDelete: (x) async {
-                    if (await confirmDelete(context, 'habit')) await repo.deleteHabit(x.id).catchError(toastError);
-                  },
-                ),
-              ),
+            SectionHeader('Habits', actionLabel: '${review.habitsCompletedToday}/${dueHabits.length} today'),
+            HabitStrip(
+              habits: dueHabits,
+              onToggle: (h) => repo.toggleHabitToday(h).catchError(toastError),
+              onDelete: _deleteHabit,
+            ),
           ],
 
           if (isEvening) ...[
-            const SectionHeader('Evening review'),
-            AppCard(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('${review.tasksCompletedToday} task${review.tasksCompletedToday == 1 ? '' : 's'} done · '
-                    '${review.habitsCompletedToday} habit${review.habitsCompletedToday == 1 ? '' : 's'} checked off',
-                    style: AppTypography.body(c.textPrimary)),
-                const SizedBox(height: 4),
-                Text('${review.stillPendingCount} still pending · ${review.tomorrowCount} due tomorrow',
-                    style: AppTypography.subhead(c.textSecondary)),
-              ]),
-            ),
+            const SizedBox(height: AppSpacing.lg),
+            EveningReviewCard(review: review),
           ],
         ],
       ),
-    );
-  }
-}
-
-class _BriefingCard extends StatelessWidget {
-  const _BriefingCard({required this.briefing});
-  final DailyBriefing briefing;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    String plural(int n, String one, String many) => '$n ${n == 1 ? one : many}';
-    final parts = [
-      if (briefing.importantTaskCount > 0) plural(briefing.importantTaskCount, 'important task', 'important tasks'),
-      if (briefing.appointmentCount > 0) plural(briefing.appointmentCount, 'appointment', 'appointments'),
-      if (briefing.upcomingBillCount > 0) plural(briefing.upcomingBillCount, 'upcoming bill', 'upcoming bills'),
-      if (briefing.habitCount > 0) plural(briefing.habitCount, 'habit', 'habits'),
-    ];
-    final workload = formatWorkload(briefing.estimatedWorkloadMinutes);
-
-    return AppCard(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Eyebrow('Today you have'),
-        const SizedBox(height: 4),
-        Text(parts.isEmpty ? 'A clear day.' : parts.join(' · '), style: AppTypography.body(c.textPrimary)),
-        if (briefing.mostImportantTask != null) ...[
-          const SizedBox(height: AppSpacing.md),
-          const Eyebrow('Most important'),
-          const SizedBox(height: 2),
-          Text(briefing.mostImportantTask!.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTypography.headline(c.textPrimary)),
-        ],
-        if (workload.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Text('About $workload of work', style: AppTypography.caption(c.textTertiary)),
-        ],
-      ]),
     );
   }
 }

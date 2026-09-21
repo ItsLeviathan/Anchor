@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../brand/anchor_logo.dart';
 import '../sync/sync_engine.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
@@ -449,29 +450,14 @@ class _FadeInViewState extends State<FadeInView> with SingleTickerProviderStateM
   }
 }
 
-/// Anchor mark: accent-gradient tile with the brand glyph.
+/// The Anchor logo tile. Same artwork as the launcher icon and splash screen
+/// (see `core/brand/anchor_logo.dart`), so the brand is identical everywhere.
 class BrandMark extends StatelessWidget {
   const BrandMark({super.key, this.size = 88});
   final double size;
 
   @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(size * 0.28),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [mix(c.accent, Colors.white, 0.18), mix(c.accent, Colors.black, 0.22)],
-        ),
-        boxShadow: c.mediumShadow,
-      ),
-      child: Icon(Icons.anchor, size: size * 0.52, color: Colors.white),
-    );
-  }
+  Widget build(BuildContext context) => AnchorLogo(size: size);
 }
 
 /// Small pill showing offline / syncing / pending / failed state; hidden

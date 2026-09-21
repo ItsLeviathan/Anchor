@@ -205,6 +205,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onTap: _deleting ? null : _deleteAccount,
             ),
           ]),
+          const SizedBox(height: AppSpacing.xl),
+          Center(
+            child: Column(children: [
+              const BrandMark(size: 44),
+              const SizedBox(height: AppSpacing.sm),
+              Text('Anchor', style: AppTypography.subhead(c.textSecondary).copyWith(fontWeight: FontWeight.w700)),
+              Text('Keep your life together.', style: AppTypography.caption(c.textTertiary)),
+            ]),
+          ),
         ],
       ),
     );

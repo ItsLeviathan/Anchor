@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Deep brand green behind the logo on the launch screen. -->
+    <color name="launch_background">#0D1F1A</color>
+</resources>
